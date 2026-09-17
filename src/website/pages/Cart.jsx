@@ -1,20 +1,18 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus,
-  Trash2,
   User,
   Phone,
   ArrowLeft,
   Receipt,
   CheckCircle2,
   AlertCircle,
-  ShoppingBag,
-  ShieldCheck,
   Lock,
-  KeyRound,
   Send,
-  Sparkles,
+  ShoppingBag,
+  Tag,
+  X,
 } from 'lucide-react'
 import { useCart } from '../../shared/context/CartContext'
 import { useCustomer } from '../../shared/context/CustomerContext'
@@ -30,25 +28,28 @@ export default function Cart() {
     items,
     customerName,
     customerMobile,
-    totalAmount,
+    subtotal,
+    taxAmount,
+    discountCode,
+    discountAmount,
+    grandTotal,
     itemCount,
     updateQuantity,
-    removeItem,
     clearCart,
     setCustomerName,
     setCustomerMobile,
     setLastOrderId,
+    applyCoupon,
+    removeCoupon,
   } = useCart()
 
-  const {
-    customer,
-    isLoggedIn,
-    loginCustomer,
-    openAuthModal,
-  } = useCustomer()
+  const { customer, isLoggedIn, loginCustomer } = useCustomer()
 
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
+  const [resetSliderTrigger, setResetSliderTrigger] = useState(false)
+  const [couponInput, setCouponInput] = useState('')
+  const [couponMsg, setCouponMsg] = useState('')
 
   // Inline OTP state on cart page when not logged in
   const [otpSent, setOtpSent] = useState(false)
@@ -69,7 +70,7 @@ export default function Cart() {
         setCustomerMobile(customer.MobileNo || customer.mobile)
       }
     }
-  }, [isLoggedIn, customer])
+  }, [isLoggedIn, customer, setCustomerName, setCustomerMobile])
 
   const isNameValid = customerName.trim().length > 0
   const isMobileValid = customerMobile.trim().length === 10
@@ -83,7 +84,6 @@ export default function Cart() {
     setError('')
 
     try {
-      // Check if user is existing or new
       const checkRes = await customersApi.check(customerMobile)
       if (checkRes.exists && checkRes.customer) {
         setIsExistingCustomer(true)
@@ -94,8 +94,7 @@ export default function Cart() {
         setIsExistingCustomer(false)
       }
       setOtpSent(true)
-    } catch (err) {
-      // Offline fallback
+    } catch {
       setIsExistingCustomer(false)
       setOtpSent(true)
     } finally {
@@ -122,7 +121,6 @@ export default function Cart() {
         isNewUser: !isExistingCustomer,
       }
 
-      // If new user needs to provide name first
       if (!isExistingCustomer && !customerName.trim() && !tempName.trim()) {
         setNeedsNameInput(true)
         setVerifyingOtp(false)
@@ -148,6 +146,19 @@ export default function Cart() {
     }
   }
 
+  // Handle Coupon Apply
+  const handleApplyCoupon = async (e) => {
+    if (e) e.preventDefault()
+    setCouponMsg('')
+    try {
+      const res = await applyCoupon(couponInput)
+      setCouponMsg(res.message)
+      setCouponInput('')
+    } catch (err) {
+      setCouponMsg(err.message)
+    }
+  }
+
   const handlePlaceOrder = async () => {
     if (!canPlace || placing) return
     setPlacing(true)
@@ -159,6 +170,9 @@ export default function Cart() {
 
     try {
       const order = await ordersApi.create({
+        orderType: 'takeaway',
+        tableNo: '',
+        deliveryAddress: '',
         customerName: currentName,
         customerMobile: currentMobile,
         customerDid,
@@ -167,22 +181,27 @@ export default function Cart() {
           mobile: currentMobile,
           customerDid,
         },
-        items: items.map(({ itemId, name, price, quantity, type }) => ({
+        discountCode,
+        discountAmount,
+        items: items.map(({ itemId, name, price, quantity, type, components }) => ({
           itemId,
           name,
           price,
           quantity,
           type,
+          components: components || [],
         })),
-        totalAmount,
+        totalAmount: grandTotal,
       })
 
       setLastOrderId(order.id)
       clearCart()
       navigate('/order-status', { state: { orderId: order.id, justPlaced: true } })
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Failed to place order. Please try again.')
       setPlacing(false)
+      setResetSliderTrigger((prev) => !prev)
+      throw err
     }
   }
 
@@ -212,7 +231,27 @@ export default function Cart() {
 
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-32">
-      {/* Selected Items Card Sheet */}
+      {/* Takeaway Order Notice Banner */}
+      <div className="bg-gradient-to-r from-orange-50 via-amber-50/60 to-orange-50 border border-orange-200/80 rounded-3xl p-4 sm:p-5 shadow-xs flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-orange-500/25 shrink-0">
+            <ShoppingBag size={24} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-black text-slate-900 m-0">Takeaway Order</h3>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-orange-600 text-white px-2 py-0.5 rounded-full shadow-xs">
+                Counter Pickup
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 font-medium m-0 mt-0.5">
+              Freshly prepared & packed in ~15 mins. Collect your order at the pickup counter!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Selected Items Card Sheet */}
       <div className="bg-white border border-gray-100 rounded-3xl p-4 sm:p-5 shadow-xs space-y-3">
         {/* Section Header */}
         <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
@@ -242,7 +281,6 @@ export default function Cart() {
                   ) : (
                     <span className="text-xl">🍗</span>
                   )}
-                  {/* FSSAI Veg / Non-Veg Badge */}
                   <div className="absolute top-0.5 right-0.5 z-10 p-0.5 flex items-center justify-center">
                     <FssaiBadge isVeg={item.label === 'Veg'} size={11} />
                   </div>
@@ -251,6 +289,11 @@ export default function Cart() {
                 <div className="min-w-0 space-y-0.5">
                   <h4 className="font-bold text-xs sm:text-sm text-gray-900 truncate m-0">{item.name}</h4>
                   <p className="text-[11px] font-semibold text-gray-400 m-0">₹{item.price} × {item.quantity}</p>
+                  {item.type === 'combo' && item.components?.length > 0 && (
+                    <p className="text-[10px] text-orange-600/90 font-medium truncate m-0">
+                      Incl: {item.components.join(', ')}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -272,12 +315,12 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* Customer Contact Information Card */}
+      {/* 3. Customer Contact Information Card */}
       <div className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 m-0">
-              Contact Information
+              Customer Details
             </h3>
           </div>
 
@@ -288,7 +331,7 @@ export default function Cart() {
           )}
         </div>
 
-        {/* 1. Mobile Number Field with Send OTP Button */}
+        {/* Mobile Number Field with Send OTP Button */}
         <div className="space-y-1">
           <div className="relative flex items-center">
             <Phone size={18} className={`absolute left-3.5 top-3.5 ${isLoggedIn ? 'text-gray-700' : 'text-gray-400'}`} />
@@ -304,9 +347,7 @@ export default function Cart() {
                 setCustomerMobile(e.target.value.replace(/\D/g, '').slice(0, 10))
               }}
               className={`input-field !pl-10 !pr-24 text-sm font-semibold transition-all ${
-                isLoggedIn
-                  ? '!bg-slate-50 !border-gray-200 !text-slate-900 cursor-not-allowed opacity-90'
-                  : ''
+                isLoggedIn ? '!bg-slate-50 !border-gray-200 !text-slate-900 cursor-not-allowed opacity-90' : ''
               }`}
               maxLength={10}
             />
@@ -314,7 +355,7 @@ export default function Cart() {
             {isLoggedIn ? (
               <div className="absolute right-3.5 top-3.5 flex items-center gap-1 text-xs font-bold text-gray-500">
                 <Lock size={14} className="text-gray-400" />
-                <span className="text-[10px] uppercase font-bold text-gray-400">Locked</span>
+                <span className="text-[10px] uppercase font-bold text-gray-400">Verified</span>
               </div>
             ) : isMobileValid ? (
               <button
@@ -330,13 +371,12 @@ export default function Cart() {
           </div>
         </div>
 
-        {/* 2. Inline OTP Verification Input (When OTP Sent & Not logged in) */}
+        {/* Inline OTP Verification Input */}
         {!isLoggedIn && otpSent && (
           <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2.5 animate-fade-in">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-amber-900 flex items-center gap-1">
-                <KeyRound size={14} className="text-orange-600" />
-                <span>Enter Verification Code</span>
+                <span>Enter 4-Digit OTP (Demo: 1234)</span>
               </span>
             </div>
 
@@ -344,7 +384,7 @@ export default function Cart() {
               <input
                 type="tel"
                 maxLength={4}
-                placeholder="Enter 4-digit OTP"
+                placeholder="1234"
                 value={otpCode}
                 onChange={(e) => {
                   setOtpError('')
@@ -378,13 +418,11 @@ export default function Cart() {
               </div>
             )}
 
-            {otpError && (
-              <p className="text-xs text-red-600 font-bold m-0">{otpError}</p>
-            )}
+            {otpError && <p className="text-xs text-red-600 font-bold m-0">{otpError}</p>}
           </div>
         )}
 
-        {/* 3. Customer Name Field */}
+        {/* Customer Name Field */}
         <div className="space-y-1">
           <div className="relative">
             <User size={18} className={`absolute left-3.5 top-3.5 ${isLoggedIn ? 'text-gray-700' : 'text-gray-400'}`} />
@@ -398,9 +436,7 @@ export default function Cart() {
                 setCustomerName(e.target.value)
               }}
               className={`input-field !pl-10 text-sm font-semibold transition-all ${
-                isLoggedIn
-                  ? '!bg-slate-50 !border-gray-200 !text-slate-900 cursor-not-allowed opacity-90'
-                  : ''
+                isLoggedIn ? '!bg-slate-50 !border-gray-200 !text-slate-900 cursor-not-allowed opacity-90' : ''
               }`}
             />
             {isLoggedIn ? (
@@ -415,7 +451,69 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* Bill Details Card */}
+      {/* 4. Promo Code / Coupon Section */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Tag size={16} className="text-orange-500" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600 m-0">
+              Apply Coupon / Discount
+            </h3>
+          </div>
+          {discountCode && (
+            <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+              <CheckCircle2 size={12} /> {discountCode} Applied
+            </span>
+          )}
+        </div>
+
+        {discountCode ? (
+          <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50/80 border border-emerald-200">
+            <div className="flex items-center gap-2">
+              <Tag size={16} className="text-emerald-700" />
+              <div>
+                <p className="text-xs font-black text-emerald-900 m-0">{discountCode}</p>
+                <p className="text-[11px] text-emerald-700 font-semibold m-0">You save ₹{discountAmount.toFixed(2)}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={removeCoupon}
+              className="text-xs font-bold text-red-600 hover:text-red-700 border-none bg-transparent cursor-pointer flex items-center gap-1"
+            >
+              <X size={14} /> Remove
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleApplyCoupon} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Enter coupon code (e.g. CHICK10)"
+              value={couponInput}
+              onChange={(e) => {
+                setCouponMsg('')
+                setCouponInput(e.target.value.toUpperCase())
+              }}
+              className="input-field !py-2 text-xs font-bold uppercase tracking-wider flex-1"
+            />
+            <button
+              type="submit"
+              disabled={!couponInput.trim()}
+              className="btn-primary !px-4 !py-2 !rounded-xl text-xs font-extrabold shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              Apply
+            </button>
+          </form>
+        )}
+
+        {couponMsg && (
+          <p className={`text-xs font-bold m-0 ${couponMsg.includes('applied') ? 'text-emerald-600' : 'text-red-600'}`}>
+            {couponMsg}
+          </p>
+        )}
+      </div>
+
+      {/* 5. Bill Details Card */}
       <div className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
         <div className="flex items-center gap-2 mb-1">
           <Receipt size={18} className="text-orange-500" />
@@ -423,18 +521,30 @@ export default function Cart() {
         </div>
 
         <div className="flex justify-between text-xs text-gray-600">
-          <span>Items Total ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
-          <span className="font-semibold text-gray-800">₹{totalAmount.toFixed(2)}</span>
+          <span>Items Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
+          <span className="font-semibold text-gray-800">₹{subtotal.toFixed(2)}</span>
         </div>
 
         <div className="flex justify-between text-xs text-gray-600">
-          <span>Packaging & Service Fee</span>
+          <span>GST Tax (5%)</span>
+          <span className="font-semibold text-gray-800">₹{taxAmount.toFixed(2)}</span>
+        </div>
+
+        <div className="flex justify-between text-xs text-gray-600">
+          <span>Packaging & Carry Bag</span>
           <span className="font-bold text-emerald-600 uppercase">FREE</span>
         </div>
 
+        {discountAmount > 0 && (
+          <div className="flex justify-between text-xs text-emerald-600 font-bold">
+            <span>Coupon Discount ({discountCode})</span>
+            <span>-₹{discountAmount.toFixed(2)}</span>
+          </div>
+        )}
+
         <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
           <span className="font-bold text-base text-gray-900">Grand Total</span>
-          <span className="font-black text-2xl text-orange-500">₹{totalAmount.toFixed(2)}</span>
+          <span className="font-black text-2xl text-orange-500">₹{grandTotal.toFixed(2)}</span>
         </div>
       </div>
 
@@ -444,7 +554,7 @@ export default function Cart() {
           <AlertCircle size={16} className="shrink-0" />
           <span>
             {!customerName.trim()
-              ? 'Please enter your name to complete your order'
+              ? 'Please enter your full name'
               : customerMobile.length < 10
               ? 'Please enter a valid 10-digit mobile number'
               : ''}
@@ -464,6 +574,7 @@ export default function Cart() {
           onConfirm={handlePlaceOrder}
           disabled={!canPlace || placing}
           label={placing ? 'Placing Order...' : 'Swipe to Place Order'}
+          resetTrigger={resetSliderTrigger}
         />
       </div>
     </div>

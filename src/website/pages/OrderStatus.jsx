@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
   ShoppingBag,
-  Receipt,
   CheckCircle2,
   Flame,
   PackageCheck,
@@ -17,11 +16,14 @@ import {
   Clock,
   AlertCircle,
   ClipboardCheck,
-  Package,
+  Search,
+  UtensilsCrossed,
+  MapPin,
+  Tag,
 } from 'lucide-react'
 import { ordersApi } from '../../shared/api'
 import { useCart } from '../../shared/context/CartContext'
-import OrderBadge from '../../shared/components/OrderBadge'
+import { useCustomer } from '../../shared/context/CustomerContext'
 import StatusPill from '../../shared/components/StatusPill'
 import FssaiBadge from '../../shared/components/FssaiBadge'
 import Loader from '../../shared/components/Loader'
@@ -40,14 +42,28 @@ export default function OrderStatus() {
   const location = useLocation()
   const navigate = useNavigate()
   const { lastOrderId } = useCart()
-  const orderId = location.state?.orderId || lastOrderId
+  const { customer, orders: customerOrders } = useCustomer()
+
+  const searchParams = new URLSearchParams(location.search)
+  const queryOrderId = searchParams.get('id')
+  const storedOrderId = (() => {
+    try {
+      const stored = localStorage.getItem('cb_last_order_id')
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  })()
+
+  const orderId = location.state?.orderId || queryOrderId || lastOrderId || storedOrderId
   const justPlacedFromLocation = location.state?.justPlaced || false
 
   const [order, setOrder] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(orderId))
   const [refreshing, setRefreshing] = useState(false)
   const [itemsExpanded, setItemsExpanded] = useState(true)
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(justPlacedFromLocation)
+  const [searchInput, setSearchInput] = useState('')
 
   const [overlayTitle, setOverlayTitle] = useState(
     justPlacedFromLocation ? 'Order Placed! 🎉' : 'Order Confirmed!'
@@ -57,9 +73,8 @@ export default function OrderStatus() {
   )
   const prevStatusRef = useRef(null)
 
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     if (!orderId) {
-      setLoading(false)
       return
     }
     try {
@@ -67,8 +82,9 @@ export default function OrderStatus() {
       setOrder(data)
     } catch (err) {
       console.error(err)
+      setOrder(null)
     }
-  }
+  }, [orderId])
 
   // Auto-dismiss overlay after 3 seconds
   useEffect(() => {
@@ -80,7 +96,7 @@ export default function OrderStatus() {
     }
   }, [showSuccessOverlay])
 
-  // Trigger green celebration splash screen when order status changes to 'delivered'
+  // Trigger celebration splash screen when order status changes to 'delivered'
   useEffect(() => {
     if (order) {
       if (prevStatusRef.current === null) {
@@ -94,18 +110,39 @@ export default function OrderStatus() {
         prevStatusRef.current = order.status
       }
     }
-  }, [order?.status])
+  }, [order])
 
   useEffect(() => {
-    if (!orderId) {
-      setLoading(false)
-      return
-    }
-    fetchOrder().finally(() => setLoading(false))
+    if (!orderId) return
+    let isMounted = true
+
+    ordersApi.getById(orderId)
+      .then((data) => {
+        if (isMounted) {
+          setOrder(data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error(err)
+        if (isMounted) {
+          setOrder(null)
+          setLoading(false)
+        }
+      })
+
     const interval = setInterval(() => {
-      fetchOrder()
-    }, 8000)
-    return () => clearInterval(interval)
+      ordersApi.getById(orderId)
+        .then((data) => {
+          if (isMounted) setOrder(data)
+        })
+        .catch(console.error)
+    }, 5000)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
   }, [orderId])
 
   const handleRefresh = async () => {
@@ -114,22 +151,84 @@ export default function OrderStatus() {
     setRefreshing(false)
   }
 
+  const handleManualTrack = (e) => {
+    if (e) e.preventDefault()
+    if (!searchInput.trim()) return
+    const clean = searchInput.trim().replace(/^#/, '')
+    navigate(`/order-status?id=${clean}`)
+  }
+
   if (!orderId) {
     return (
-      <div className="max-w-md mx-auto text-center py-16 px-4 space-y-4">
-        <div className="w-20 h-20 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-2 text-3xl shadow-inner border border-orange-100">
-          📋
+      <div className="max-w-md mx-auto py-12 px-4 space-y-6">
+        <div className="text-center space-y-3">
+          <div className="w-20 h-20 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner border border-orange-100">
+            🔍
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black text-gray-900 m-0">Track Your Order</h2>
+            <p className="text-xs sm:text-sm text-gray-500 m-0">
+              Enter your Order Number to check real-time kitchen progress.
+            </p>
+          </div>
         </div>
-        <div className="space-y-1">
-          <h2 className="text-2xl font-black text-gray-900 m-0">No Active Order Tracked</h2>
-          <p className="text-xs sm:text-sm text-gray-500 m-0">Place an order to track live kitchen preparation & status.</p>
+
+        {/* Manual Order ID Search Box */}
+        <form onSubmit={handleManualTrack} className="bg-white border border-gray-200 p-4 rounded-3xl shadow-sm space-y-3">
+          <label className="text-xs font-bold text-gray-700 block">Order ID or Token Number</label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="e.g. ord-20260917-1"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="input-field !pl-9 !py-2.5 text-sm font-semibold"
+                autoFocus
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!searchInput.trim()}
+              className="btn-primary !px-5 !py-2.5 !rounded-xl text-xs font-black shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              Track
+            </button>
+          </div>
+        </form>
+
+        {/* If customer is logged in, show their recent orders */}
+        {customer && customerOrders?.length > 0 && (
+          <div className="bg-white border border-gray-100 p-4 rounded-3xl shadow-2xs space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 m-0">Recent Orders</h3>
+            <div className="divide-y divide-gray-100">
+              {customerOrders.slice(0, 3).map((co) => (
+                <button
+                  key={co.id || co.orderNo}
+                  type="button"
+                  onClick={() => navigate(`/order-status?id=${co.id}`)}
+                  className="w-full py-2.5 flex items-center justify-between text-left hover:bg-gray-50 transition-colors border-none bg-transparent cursor-pointer"
+                >
+                  <div>
+                    <span className="font-extrabold text-sm text-gray-900 block">#{co.orderNo}</span>
+                    <span className="text-[11px] text-gray-400 font-medium">₹{Number(co.totalAmount || 0).toFixed(0)}</span>
+                  </div>
+                  <StatusPill status={co.status} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="text-center pt-2">
+          <button
+            onClick={() => navigate('/')}
+            className="btn-outline !px-6 !py-2.5 !rounded-2xl text-xs font-bold inline-flex items-center gap-2 cursor-pointer"
+          >
+            <ArrowLeft size={16} /> Back to Menu
+          </button>
         </div>
-        <button
-          onClick={() => navigate('/')}
-          className="btn-primary !px-7 !py-3 !rounded-2xl text-sm font-black shadow-lg shadow-orange-500/25 active:scale-95 cursor-pointer inline-flex items-center gap-2"
-        >
-          <ArrowLeft size={18} /> Explore Menu
-        </button>
       </div>
     )
   }
@@ -143,13 +242,21 @@ export default function OrderStatus() {
       <div className="max-w-md mx-auto text-center py-16 px-4 space-y-4">
         <AlertCircle size={48} className="mx-auto text-gray-300" />
         <h2 className="text-xl font-bold text-gray-900 m-0">Order Not Found</h2>
-        <p className="text-xs text-gray-500 m-0">We couldn't find an active order with ID #{orderId}</p>
-        <button
-          onClick={() => navigate('/')}
-          className="btn-primary !px-6 !py-2.5 !rounded-xl text-xs font-extrabold cursor-pointer"
-        >
-          Back to Menu
-        </button>
+        <p className="text-xs text-gray-500 m-0">We couldn't find an order with ID #{orderId}</p>
+        <div className="flex justify-center gap-3 pt-2">
+          <button
+            onClick={() => navigate('/order-status')}
+            className="btn-outline !px-5 !py-2 !rounded-xl text-xs font-extrabold cursor-pointer"
+          >
+            Search Another
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="btn-primary !px-5 !py-2 !rounded-xl text-xs font-extrabold cursor-pointer"
+          >
+            Back to Menu
+          </button>
+        </div>
       </div>
     )
   }
@@ -157,17 +264,6 @@ export default function OrderStatus() {
   const currentStepIdx = STATUS_ORDER.indexOf(order.status)
   const isCancelled = order.status === 'cancelled'
   const totalItemCount = order.items?.reduce((s, i) => s + i.quantity, 0) || 0
-
-  const handleManualOpenOverlay = () => {
-    if (order.status === 'delivered') {
-      setOverlayTitle('Order Delivered! 🥳')
-      setOverlaySubtitle('Your order has been delivered successfully. Enjoy your delicious meal!')
-    } else {
-      setOverlayTitle('Order Confirmed! 🎉')
-      setOverlaySubtitle('Your order has been received & kitchen preparation is starting.')
-    }
-    setShowSuccessOverlay(true)
-  }
 
   return (
     <>
@@ -229,7 +325,7 @@ export default function OrderStatus() {
 
               <div className="pt-3 border-t border-white/20 flex items-center justify-between text-xs font-bold text-white">
                 <span>{order.customerName}</span>
-                <span>₹{order.totalAmount?.toFixed(2)}</span>
+                <span>₹{Number(order.totalAmount || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -249,7 +345,6 @@ export default function OrderStatus() {
           </div>
         </div>
       )}
-
 
       <div className="max-w-lg sm:max-w-xl mx-auto space-y-5 pb-28">
         {/* Brand Header */}
@@ -313,9 +408,7 @@ export default function OrderStatus() {
           {/* Step Progress Bar & Icons */}
           {!isCancelled && (
             <div className="space-y-3 pt-1">
-              {/* Isolated Icon Row with Center-Anchored Connecting Line */}
               <div className="relative flex items-center justify-between">
-                {/* Connecting Progress Line (Anchored directly to icon row center) */}
                 <div className="absolute inset-x-[12.5%] top-1/2 -translate-y-1/2 h-1 bg-gray-100 rounded-full z-0 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500"
@@ -325,7 +418,6 @@ export default function OrderStatus() {
                   />
                 </div>
 
-                {/* Step Icons Row */}
                 {TRACKER_STEPS.map((step, idx) => {
                   const Icon = step.icon
                   const isPassed = currentStepIdx >= idx
@@ -349,7 +441,6 @@ export default function OrderStatus() {
                 })}
               </div>
 
-              {/* Step Labels Row */}
               <div className="flex items-start justify-between pt-1">
                 {TRACKER_STEPS.map((step, idx) => {
                   const isPassed = currentStepIdx >= idx
@@ -374,11 +465,10 @@ export default function OrderStatus() {
 
         {/* Order Info & Customer Details Card */}
         <div className="bg-white border border-gray-100 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
-          {/* Professional & Minimal Card Top Bar */}
           <div className="flex items-center justify-between pb-3 border-b border-gray-100">
             <div className="space-y-0.5">
               <h4 className="text-sm sm:text-base font-bold text-gray-900 m-0">Order #{order.orderNo}</h4>
-              <p className="text-[11px] text-gray-400 font-medium m-0">Order reference details</p>
+              <p className="text-[11px] text-gray-400 font-medium m-0">ID: {order.id}</p>
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100 shrink-0">
@@ -391,9 +481,33 @@ export default function OrderStatus() {
             </div>
           </div>
 
+          {/* Dining Type & Instructions Banner */}
+          <div className="p-3 rounded-2xl bg-orange-50/70 border border-orange-100 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              {order.orderType === 'dine-in' ? (
+                <UtensilsCrossed size={16} className="text-orange-600" />
+              ) : order.orderType === 'delivery' ? (
+                <MapPin size={16} className="text-orange-600" />
+              ) : (
+                <ShoppingBag size={16} className="text-orange-600" />
+              )}
+              <span className="font-extrabold text-orange-950 uppercase tracking-wide">
+                {order.orderType === 'dine-in'
+                  ? `Dine-In • Table ${order.tableNo || 'N/A'}`
+                  : order.orderType === 'delivery'
+                  ? 'Delivery to Doorstep'
+                  : 'Counter Takeaway'}
+              </span>
+            </div>
+            {order.orderType === 'delivery' && order.deliveryAddress && (
+              <span className="text-[11px] text-gray-600 font-medium truncate max-w-[200px]">
+                {order.deliveryAddress}
+              </span>
+            )}
+          </div>
+
           {/* Customer Details Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {/* Customer Name Box */}
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100">
               <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
                 <User size={18} />
@@ -404,7 +518,6 @@ export default function OrderStatus() {
               </div>
             </div>
 
-            {/* Mobile Number Box */}
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100">
               <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
                 <Phone size={18} />
@@ -433,10 +546,10 @@ export default function OrderStatus() {
                   <span className="text-[10px] text-gray-400 font-semibold">Click to {itemsExpanded ? 'collapse' : 'view items'}</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <span className="font-black text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
-                  ₹{order.totalAmount?.toFixed(0)}
+                  ₹{Number(order.totalAmount || 0).toFixed(0)}
                 </span>
                 {itemsExpanded ? (
                   <ChevronUp size={16} className="text-gray-400" />
@@ -452,18 +565,25 @@ export default function OrderStatus() {
                   {order.items?.map((item, idx) => (
                     <div
                       key={idx}
-                      className="py-2.5 first:pt-1 last:pb-0 flex items-center justify-between gap-3 text-xs"
+                      className="py-2.5 first:pt-1 last:pb-0 text-xs space-y-1"
                     >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <FssaiBadge isVeg={item.label === 'Veg'} size={13} />
-                        <span className="font-bold text-gray-900 truncate">{item.name}</span>
-                        <span className="text-[11px] font-extrabold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md border border-orange-100">
-                          {item.quantity}x
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <FssaiBadge isVeg={item.label === 'Veg'} size={13} />
+                          <span className="font-bold text-gray-900 truncate">{item.name}</span>
+                          <span className="text-[11px] font-extrabold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md border border-orange-100">
+                            {item.quantity}x
+                          </span>
+                        </div>
+                        <span className="font-black text-gray-900 ml-2 shrink-0">
+                          ₹{(item.price * item.quantity).toFixed(0)}
                         </span>
                       </div>
-                      <span className="font-black text-gray-900 ml-2 shrink-0">
-                        ₹{(item.price * item.quantity).toFixed(0)}
-                      </span>
+                      {item.type === 'combo' && item.components?.length > 0 && (
+                        <p className="text-[10px] text-orange-700 font-medium pl-5 m-0">
+                          Includes: {item.components.join(', ')}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -471,16 +591,32 @@ export default function OrderStatus() {
                 {/* Subtotal & Total Bill Summary */}
                 <div className="pt-3 border-t border-gray-100 space-y-1.5">
                   <div className="flex justify-between items-center text-xs text-gray-500 font-medium">
-                    <span>Items Total ({totalItemCount})</span>
-                    <span>₹{order.totalAmount?.toFixed(2)}</span>
+                    <span>Items Subtotal</span>
+                    <span>₹{Number(order.itemTotal || order.totalAmount || 0).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-gray-500 font-medium">
-                    <span>Packaging & Delivery</span>
-                    <span className="text-emerald-600 font-bold uppercase text-[10px]">Free</span>
-                  </div>
+                  {order.taxAmount != null && (
+                    <div className="flex justify-between items-center text-xs text-gray-500 font-medium">
+                      <span>GST Tax (5%)</span>
+                      <span>₹{Number(order.taxAmount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {order.deliveryFee != null && (
+                    <div className="flex justify-between items-center text-xs text-gray-500 font-medium">
+                      <span>Delivery Fee</span>
+                      <span>{order.deliveryFee === 0 ? 'FREE' : `₹${Number(order.deliveryFee).toFixed(2)}`}</span>
+                    </div>
+                  )}
+                  {order.discountAmount > 0 && (
+                    <div className="flex justify-between items-center text-xs text-emerald-600 font-bold">
+                      <span className="flex items-center gap-1">
+                        <Tag size={12} /> Discount ({order.discountCode || 'Promo'})
+                      </span>
+                      <span>-₹{Number(order.discountAmount).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="pt-2 flex justify-between items-center text-xs font-bold border-t border-gray-100">
                     <span className="text-gray-900 font-extrabold text-sm">Grand Total</span>
-                    <span className="text-emerald-600 font-black text-lg">₹{order.totalAmount?.toFixed(2)}</span>
+                    <span className="text-emerald-600 font-black text-lg">₹{Number(order.totalAmount || 0).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

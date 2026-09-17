@@ -1,5 +1,7 @@
 import { getDb, FieldValue } from '../../config/firebase.js'
 import { appendOrderToCustomer } from '../customers/model.js'
+import { invalidateDashboardCache } from '../dashboard/model.js'
+import { getCouponByCodeFromDb } from '../coupons/model.js'
 
 export const ORDER_STATUSES = {
   NEW: 'new',
@@ -26,7 +28,7 @@ const memoryOrders = []
 const memoryOrderCounters = {}
 
 export function getTodayDate() {
-  return new Date().toISOString().split('T')[0]
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
 }
 
 export function canTransition(from, to) {
@@ -81,17 +83,133 @@ export async function createOrderInDb(orderData) {
     customerDid: cDid,
   }
 
+  const orderType = 'takeaway'
+  const tableNo = ''
+  const deliveryAddress = ''
+
+  // Validate items against canonical database catalog
+  let verifiedItems
+  let itemTotal = 0
+
+  if (db && Array.isArray(orderData.items)) {
+    try {
+      const itemsSnapshot = await db.collection('items').get()
+      const catalogMap = new Map()
+      itemsSnapshot.docs.forEach((d) => catalogMap.set(d.id, { id: d.id, ...d.data() }))
+
+      verifiedItems = orderData.items.map((clientItem) => {
+        const catalogItem = catalogMap.get(clientItem.itemId || clientItem.id)
+        const qty = Math.max(1, parseInt(clientItem.quantity, 10) || 1)
+        const canonicalPrice = catalogItem ? Number(catalogItem.price) : Number(clientItem.price || 0)
+        const name = catalogItem?.name || clientItem.name || 'Item'
+        const type = catalogItem?.type || clientItem.type || 'item'
+        const label = catalogItem?.label || clientItem.label || 'Non-Veg'
+        const imageUrl = catalogItem?.imageUrl || clientItem.imageUrl || ''
+
+        let components = clientItem.components || []
+        if (type === 'combo' && catalogItem?.comboItemIds?.length) {
+          components = catalogItem.comboItemIds
+            .map((cId) => catalogMap.get(cId)?.name)
+            .filter(Boolean)
+        }
+
+        itemTotal += canonicalPrice * qty
+
+        return {
+          itemId: clientItem.itemId || clientItem.id,
+          name,
+          price: canonicalPrice,
+          quantity: qty,
+          type,
+          label,
+          imageUrl,
+          components,
+        }
+      })
+    } catch {
+      verifiedItems = (orderData.items || []).map((i) => {
+        const qty = Math.max(1, parseInt(i.quantity, 10) || 1)
+        const price = Number(i.price || 0)
+        itemTotal += price * qty
+        return {
+          itemId: i.itemId || i.id,
+          name: i.name,
+          price,
+          quantity: qty,
+          type: i.type || 'item',
+          label: i.label || 'Non-Veg',
+          imageUrl: i.imageUrl || '',
+          components: i.components || [],
+        }
+      })
+    }
+  } else {
+    verifiedItems = (orderData.items || []).map((i) => {
+      const qty = Math.max(1, parseInt(i.quantity, 10) || 1)
+      const price = Number(i.price || 0)
+      itemTotal += price * qty
+      return {
+        itemId: i.itemId || i.id,
+        name: i.name,
+        price,
+        quantity: qty,
+        type: i.type || 'item',
+        label: i.label || 'Non-Veg',
+        imageUrl: i.imageUrl || '',
+        components: i.components || [],
+      }
+    })
+  }
+
+  // Calculate 5% GST tax
+  const taxAmount = Math.round(itemTotal * 0.05 * 100) / 100
+
+  // Takeaway shop: deliveryFee is always 0
+  const deliveryFee = 0
+
+  // Calculate Discount from dynamic coupons in DB
+  let discountAmount = 0
+  const discountCode = (orderData.discountCode || '').toUpperCase().trim()
+  if (discountCode) {
+    const coupon = await getCouponByCodeFromDb(discountCode)
+    if (coupon && coupon.isActive) {
+      const now = new Date()
+      const expiry = coupon.validTill ? new Date(coupon.validTill) : null
+      if (expiry) expiry.setHours(23, 59, 59, 999)
+      if (!expiry || now <= expiry) {
+        if (!coupon.minOrderAmount || itemTotal >= coupon.minOrderAmount) {
+          if (coupon.discountType === 'percentage') {
+            const calculated = Math.round(itemTotal * (coupon.discountValue / 100) * 100) / 100
+            discountAmount = coupon.maxDiscount ? Math.min(coupon.maxDiscount, calculated) : calculated
+          } else {
+            discountAmount = Math.min(itemTotal, coupon.discountValue)
+          }
+        }
+      }
+    }
+  }
+
+  const grandTotal = Math.max(0, Math.round((itemTotal + taxAmount + deliveryFee - discountAmount) * 100) / 100)
+
   if (!db) {
     const order = {
       id: customId,
       orderNo,
       orderDate,
+      orderType,
+      tableNo,
+      deliveryAddress,
       customerName: cName,
       customerMobile: cMobile,
       customerDid: cDid,
       customerDetails,
-      items: orderData.items,
-      totalAmount: orderData.totalAmount,
+      items: verifiedItems,
+      itemTotal,
+      taxAmount,
+      deliveryFee,
+      discountCode,
+      discountAmount,
+      totalAmount: grandTotal,
       status: ORDER_STATUSES.NEW,
       payment: null,
       createdAt: isoNow,
@@ -99,6 +217,7 @@ export async function createOrderInDb(orderData) {
     }
     memoryOrders.unshift(order)
     appendOrderToCustomer(cDid || cMobile, order)
+    invalidateDashboardCache()
     return order
   }
 
@@ -106,12 +225,20 @@ export async function createOrderInDb(orderData) {
   const order = {
     orderNo,
     orderDate,
+    orderType,
+    tableNo,
+    deliveryAddress,
     customerName: cName,
     customerMobile: cMobile,
     customerDid: cDid,
     customerDetails,
-    items: orderData.items,
-    totalAmount: orderData.totalAmount,
+    items: verifiedItems,
+    itemTotal,
+    taxAmount,
+    deliveryFee,
+    discountCode,
+    discountAmount,
+    totalAmount: grandTotal,
     status: ORDER_STATUSES.NEW,
     payment: null,
     createdAt: now,
@@ -121,6 +248,7 @@ export async function createOrderInDb(orderData) {
   const docRef = db.collection('orders').doc(customId)
   await docRef.set(order)
   invalidateActiveOrdersCache()
+  invalidateDashboardCache()
   const created = await docRef.get()
   const serialized = serializeDoc(created)
   appendOrderToCustomer(cDid || cMobile, serialized)
@@ -221,6 +349,7 @@ export async function updateOrderStatusInDb(id, newStatus) {
     }
     order.status = newStatus
     order.updatedAt = new Date().toISOString()
+    invalidateDashboardCache()
     return order
   }
 
@@ -239,6 +368,7 @@ export async function updateOrderStatusInDb(id, newStatus) {
     updatedAt: FieldValue?.serverTimestamp ? FieldValue.serverTimestamp() : new Date(),
   })
   invalidateActiveOrdersCache()
+  invalidateDashboardCache()
 
   return {
     id: doc.id,
@@ -261,6 +391,7 @@ export async function deliverOrderInDb(id, payment) {
     order.payment = payment
     order.updatedAt = new Date().toISOString()
     invalidateActiveOrdersCache()
+    invalidateDashboardCache()
     return order
   }
 
@@ -280,6 +411,7 @@ export async function deliverOrderInDb(id, payment) {
     updatedAt: FieldValue?.serverTimestamp ? FieldValue.serverTimestamp() : new Date(),
   })
   invalidateActiveOrdersCache()
+  invalidateDashboardCache()
 
   return {
     id: doc.id,
@@ -289,3 +421,32 @@ export async function deliverOrderInDb(id, payment) {
     updatedAt: isoNow,
   }
 }
+
+export async function getPackedOrdersFromDb() {
+  const db = getDb()
+
+  if (!db) {
+    return memoryOrders
+      .filter((o) => (o.status || '').toLowerCase() === ORDER_STATUSES.PACKED)
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+  }
+
+  try {
+    const snapshot = await db
+      .collection('orders')
+      .where('status', '==', ORDER_STATUSES.PACKED)
+      .get()
+
+    const list = snapshot.docs.map(serializeDoc)
+    list.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+    return list
+  } catch (err) {
+    console.warn('Fallback getting packed orders from Firestore:', err.message)
+    const snapshot = await db.collection('orders').get()
+    return snapshot.docs
+      .map(serializeDoc)
+      .filter((o) => (o.status || '').toLowerCase() === ORDER_STATUSES.PACKED)
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+  }
+}
+

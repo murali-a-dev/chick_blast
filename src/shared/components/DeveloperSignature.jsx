@@ -2,7 +2,7 @@ import { ArrowUpRight, Heart, Code2 } from 'lucide-react'
 import version from '../../../package.json'
 import logoImg from '../../assets/logo.png'
 
-export const DEVELOPER_INFO = {
+const DEVELOPER_INFO = {
   name: 'Murali',
   portfolioUrl: 'https://my-self-murali.vercel.app/',
   version: version.version,

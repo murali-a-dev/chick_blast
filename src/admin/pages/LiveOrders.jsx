@@ -1,29 +1,18 @@
 import { useState, useEffect, useCallback } from 'react'
 import moment from 'moment'
-import { RefreshCw, XCircle, Utensils, Package, CheckCircle2, Sparkles, Phone, ShoppingBag, ChevronRight } from 'lucide-react'
+import { RefreshCw, Phone, ShoppingBag } from 'lucide-react'
 import { ordersApi } from '../../shared/api'
-import { STATUS_ACTIONS, STATUS_LABELS } from '../../shared/constants'
+import { STATUS_LABELS } from '../../shared/constants'
 import OrderBadge from '../../shared/components/OrderBadge'
 import StatusPill from '../../shared/components/StatusPill'
 import GradientModal from '../../shared/components/GradientModal'
 import OrderDetailsContent from '../../shared/components/OrderDetailsContent'
 import DeliveryModal from '../components/DeliveryModal'
 import ConfirmModal from '../components/ConfirmModal'
-import Toast, { useToast } from '../../shared/components/Toast'
+import Toast from '../../shared/components/Toast'
+import { useToast } from '../../shared/hooks/useToast'
 import Loader from '../../shared/components/Loader'
 import StatusActionMenu from '../components/StatusActionMenu'
-
-const ACTION_ICONS = {
-  preparing: Utensils,
-  packed: Package,
-  delivered: CheckCircle2,
-}
-
-const ACTION_BUTTON_STYLES = {
-  preparing: 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs border-none',
-  packed: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs border-none',
-  delivered: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs border-none',
-}
 
 export default function LiveOrders() {
   const [orders, setOrders] = useState([])
@@ -47,12 +36,29 @@ export default function LiveOrders() {
   }, [])
 
   useEffect(() => {
-    fetchOrders().finally(() => setLoading(false))
+    let isMounted = true
+    ordersApi.refresh()
+      .then((data) => {
+        if (isMounted) setOrders(data || [])
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (isMounted) setLoading(false)
+      })
+
     const interval = setInterval(() => {
-      fetchOrders()
+      ordersApi.refresh()
+        .then((data) => {
+          if (isMounted) setOrders(data || [])
+        })
+        .catch(console.error)
     }, 5000)
-    return () => clearInterval(interval)
-  }, [fetchOrders])
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [])
 
   const handleDropdownSelect = async (order, targetStatus) => {
     if (!targetStatus) return
@@ -81,33 +87,6 @@ export default function LiveOrders() {
     setRefreshing(true)
     await fetchOrders()
     setRefreshing(false)
-  }
-
-  const handleStatusUpdate = async (order, e) => {
-    e?.stopPropagation()
-    const action = STATUS_ACTIONS[order.status]
-    if (!action) return
-
-    if (action.next === 'delivered') {
-      setDeliveryOrder(order)
-      return
-    }
-
-    setActionLoading(order.id)
-    try {
-      await ordersApi.updateStatus(order.id, action.next)
-      await fetchOrders()
-      showToast(`Order #${order.orderNo} updated to ${STATUS_LABELS[action.next] || action.next}!`, 'success')
-    } catch (err) {
-      showToast(err.message, 'error')
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
-  const handleOpenCancelModal = (order, e) => {
-    e?.stopPropagation()
-    setCancelModalOrder(order)
   }
 
   const handleConfirmCancel = async () => {
@@ -231,8 +210,6 @@ export default function LiveOrders() {
             {/* Mobile View Cards (block md:hidden) */}
             <div className="block md:hidden divide-y divide-slate-100">
               {filteredOrders.map((order) => {
-                const action = STATUS_ACTIONS[order.status]
-                const ActionIcon = action ? ACTION_ICONS[action.next] || Sparkles : null
                 const isLoadingThis = actionLoading === order.id
 
                 return (
@@ -241,7 +218,7 @@ export default function LiveOrders() {
                     onClick={() => setSelectedOrder(order)}
                     className="p-3.5 sm:p-4 hover:bg-slate-50/80 active:bg-slate-100/60 transition-colors cursor-pointer space-y-3"
                   >
-                    {/* Top Row: Order No, Elapsed Time, Status Pill */}
+                    {/* Top Row: Order No, Elapsed Time, Fulfillment & Status */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2">
                         <OrderBadge orderNo={order.orderNo} />
@@ -249,10 +226,27 @@ export default function LiveOrders() {
                           {moment(order.createdAt).fromNow()}
                         </span>
                       </div>
-                      <StatusPill status={order.status} />
+                      <div className="flex items-center gap-1.5">
+                        {order.orderType === 'dine-in' && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80">
+                            🍽️ Table {order.tableNo || '-'}
+                          </span>
+                        )}
+                        {order.orderType === 'delivery' && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200/80">
+                            🛵 Delivery
+                          </span>
+                        )}
+                        {(!order.orderType || order.orderType === 'takeaway') && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200/80">
+                            🥡 Takeaway
+                          </span>
+                        )}
+                        <StatusPill status={order.status} />
+                      </div>
                     </div>
 
-                    {/* Customer & Items Summary */}
+                    {/* Customer & Amount Summary */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-sm text-slate-900 truncate pr-2">{order.customerName}</span>
@@ -272,13 +266,26 @@ export default function LiveOrders() {
                       </div>
                     </div>
 
-                    {/* Items preview snippet */}
+                    {/* Items breakdown with combo expansion */}
                     {order.items && order.items.length > 0 && (
-                      <div className="text-xs text-slate-600 bg-slate-50 border border-slate-100 p-2.5 rounded-xl flex items-center justify-between gap-2">
-                        <span className="line-clamp-1 font-medium text-slate-700">
-                          {order.items.map((i) => `${i.name} (x${i.quantity})`).join(', ')}
-                        </span>
-                        <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                      <div className="text-xs bg-slate-50 border border-slate-100 p-2.5 rounded-xl space-y-1.5">
+                        {order.items.map((i, idx) => (
+                          <div key={idx} className="space-y-0.5">
+                            <div className="flex items-center justify-between font-medium text-slate-800">
+                              <span>
+                                {i.name} <span className="text-orange-600 font-bold">x{i.quantity}</span>
+                              </span>
+                              <span className="text-slate-500 font-semibold">₹{(i.price * i.quantity).toFixed(2)}</span>
+                            </div>
+                            {i.components && i.components.length > 0 && (
+                              <div className="text-[11px] text-slate-500 pl-3 border-l-2 border-orange-200 space-y-0.5">
+                                {i.components.map((c, cIdx) => (
+                                  <div key={cIdx}>↳ {c.name} (x{c.quantity})</div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
 
@@ -306,6 +313,7 @@ export default function LiveOrders() {
                   <tr>
                     <th>Date & Time</th>
                     <th>Order No</th>
+                    <th>Mode</th>
                     <th>Customer Name</th>
                     <th>Mobile</th>
                     <th>Amount</th>
@@ -321,6 +329,21 @@ export default function LiveOrders() {
                       <tr key={order.id} onClick={() => setSelectedOrder(order)}>
                         <td className="text-slate-500 font-medium">{moment(order.createdAt).format('DD MMM, hh:mm A')}</td>
                         <td><OrderBadge orderNo={order.orderNo} /></td>
+                        <td>
+                          {order.orderType === 'dine-in' ? (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80">
+                              🍽️ Table {order.tableNo || '-'}
+                            </span>
+                          ) : order.orderType === 'delivery' ? (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200/80" title={order.deliveryAddress}>
+                              🛵 Delivery
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-purple-50 text-purple-800 border border-purple-200/80">
+                              🥡 Takeaway
+                            </span>
+                          )}
+                        </td>
                         <td className="font-bold text-slate-900">{order.customerName}</td>
                         <td className="text-slate-600 font-medium">{order.customerMobile}</td>
                         <td className="font-extrabold text-slate-900">

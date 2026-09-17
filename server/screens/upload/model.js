@@ -1,9 +1,11 @@
-const IMGBB_API_KEY = process.env.IMGBB_API_KEY || '2ef50f4aed2cd9fd117b433cbca4ca51'
-
-export async function uploadToImgBB(fileBuffer, filename = 'image.jpg') {
+export async function uploadToImgBB(fileBuffer) {
+  const apiKey = process.env.IMGBB_API_KEY
+  if (!apiKey) {
+    throw new Error('Server upload service not configured: IMGBB_API_KEY is missing')
+  }
   const base64Image = fileBuffer.toString('base64')
   const formData = new URLSearchParams()
-  formData.append('key', IMGBB_API_KEY)
+  formData.append('key', apiKey)
   formData.append('image', base64Image)
 
   const response = await fetch('https://api.imgbb.com/1/upload', {

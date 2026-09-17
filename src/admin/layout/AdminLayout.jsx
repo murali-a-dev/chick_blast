@@ -6,11 +6,15 @@ import {
   ClipboardList,
   Package,
   Layers,
+  Ticket,
+  Tv,
   Menu,
   X,
   Globe,
+  LogOut,
 } from 'lucide-react'
 import DeveloperSignature from '../../shared/components/DeveloperSignature'
+import AdminAuthModal from '../components/AdminAuthModal'
 import logoImg from '../../assets/logo.png'
 import '../../styles/admin.css'
 
@@ -20,14 +24,29 @@ const navItems = [
   { to: '/admin/order-summary', icon: ClipboardList, label: 'Order Summary' },
   { to: '/admin/items', icon: Package, label: 'Items' },
   { to: '/admin/combo-items', icon: Layers, label: 'Combo Items' },
+  { to: '/admin/coupons', icon: Ticket, label: 'Coupons' },
+  { to: '/ready_for_pickup', icon: Tv, label: 'Pickup Screen' },
   { to: '/', icon: Globe, label: 'Website', end: true },
 ]
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => sessionStorage.getItem('cb_admin_token') === 'admin_authenticated'
+  )
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('cb_admin_token')
+    setIsAuthenticated(false)
+  }
 
   return (
     <div className="admin-layout">
+      <AdminAuthModal
+        isOpen={!isAuthenticated}
+        onSuccess={() => setIsAuthenticated(true)}
+      />
+
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="admin-sidebar-header flex items-center gap-3">
           <img
@@ -55,6 +74,14 @@ export default function AdminLayout() {
               {label}
             </NavLink>
           ))}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="admin-nav-link text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 w-full text-left bg-transparent border-none cursor-pointer mt-2"
+          >
+            <LogOut size={20} />
+            Logout
+          </button>
         </nav>
         <DeveloperSignature variant="sidebar" />
       </aside>
@@ -66,7 +93,7 @@ export default function AdminLayout() {
         >
           {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
-        <Outlet />
+        {isAuthenticated && <Outlet />}
       </div>
 
       {sidebarOpen && (

@@ -1,17 +1,33 @@
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { ChevronRight, Check, ChevronsRight, Lock } from 'lucide-react'
 
-export default function SwipeToConfirm({ onConfirm, disabled, label = 'Swipe to Place Order' }) {
+export default function SwipeToConfirm({ onConfirm, disabled, label = 'Swipe to Place Order', resetTrigger }) {
   const trackRef = useRef(null)
+  const startX = useRef(0)
   const [dragging, setDragging] = useState(false)
   const [offset, setOffset] = useState(0)
   const [confirmed, setConfirmed] = useState(false)
   const [shake, setShake] = useState(false)
-  const startX = useRef(0)
+  const [maxOffset, setMaxOffset] = useState(200)
+  const [prevReset, setPrevReset] = useState(resetTrigger)
 
-  const getMaxOffset = useCallback(() => {
-    if (!trackRef.current) return 200
-    return Math.max(50, trackRef.current.offsetWidth - 56)
+  // Adjust state during render when resetTrigger changes
+  if (resetTrigger !== prevReset) {
+    setPrevReset(resetTrigger)
+    setConfirmed(false)
+    setOffset(0)
+  }
+
+  // Measure track width safely in effect to avoid accessing ref during render
+  useEffect(() => {
+    const updateMax = () => {
+      if (trackRef.current) {
+        setMaxOffset(Math.max(50, trackRef.current.offsetWidth - 56))
+      }
+    }
+    updateMax()
+    window.addEventListener('resize', updateMax)
+    return () => window.removeEventListener('resize', updateMax)
   }, [])
 
   // Touch and mouse start
@@ -39,26 +55,31 @@ export default function SwipeToConfirm({ onConfirm, disabled, label = 'Swipe to 
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!dragging || disabled || confirmed) return
-      const max = getMaxOffset()
-      const newOffset = Math.max(0, Math.min(e.clientX - startX.current, max))
+      const newOffset = Math.max(0, Math.min(e.clientX - startX.current, maxOffset))
       setOffset(newOffset)
     }
 
     const handleTouchMove = (e) => {
       if (!dragging || disabled || confirmed) return
-      const max = getMaxOffset()
-      const newOffset = Math.max(0, Math.min(e.touches[0].clientX - startX.current, max))
+      const newOffset = Math.max(0, Math.min(e.touches[0].clientX - startX.current, maxOffset))
       setOffset(newOffset)
     }
 
-    const handleEnd = () => {
+    const handleEnd = async () => {
       if (!dragging || disabled || confirmed) return
       setDragging(false)
-      const max = getMaxOffset()
-      if (offset >= max * 0.65) {
-        setOffset(max)
+      if (offset >= maxOffset * 0.65) {
+        setOffset(maxOffset)
         setConfirmed(true)
-        onConfirm?.()
+        try {
+          if (onConfirm) {
+            await onConfirm()
+          }
+        } catch {
+          // If onConfirm rejects, reset slider
+          setConfirmed(false)
+          setOffset(0)
+        }
       } else {
         setOffset(0)
       }
@@ -77,10 +98,9 @@ export default function SwipeToConfirm({ onConfirm, disabled, label = 'Swipe to 
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleEnd)
     }
-  }, [dragging, disabled, confirmed, offset, getMaxOffset, onConfirm])
+  }, [dragging, disabled, confirmed, offset, maxOffset, onConfirm])
 
-  const max = getMaxOffset()
-  const progressRatio = Math.min(1, Math.max(0, offset / (max || 1)))
+  const progressRatio = Math.min(1, Math.max(0, offset / (maxOffset || 1)))
   const labelOpacity = Math.max(0, 1 - progressRatio * 1.5)
 
   return (

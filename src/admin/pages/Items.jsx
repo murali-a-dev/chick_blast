@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Pencil, Eye, EyeOff, Search, Package, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, EyeOff, Search, Package, X } from 'lucide-react'
 import { itemsApi, uploadImage } from '../../shared/api'
 import { CATEGORIES, LABELS } from '../../shared/constants'
 import GradientModal from '../../shared/components/GradientModal'
+import ConfirmModal from '../../shared/components/ConfirmModal'
 import ModernSelect from '../../shared/components/ModernSelect'
 import FssaiBadge from '../../shared/components/FssaiBadge'
 import Loader from '../../shared/components/Loader'
@@ -28,13 +29,9 @@ const DIET_FILTER_OPTIONS = [
 ]
 
 function ItemFormModal({ isOpen, onClose, item, onSave }) {
-  const [form, setForm] = useState(emptyForm)
-  const [uploading, setUploading] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
+  const [form, setForm] = useState(() => {
     if (item) {
-      setForm({
+      return {
         name: item.name || '',
         unit: item.unit || 'pc',
         category: item.category || CATEGORIES[0],
@@ -42,11 +39,12 @@ function ItemFormModal({ isOpen, onClose, item, onSave }) {
         price: item.price ?? '',
         description: item.description || '',
         imageUrl: item.imageUrl || '',
-      })
-    } else {
-      setForm(emptyForm)
+      }
     }
-  }, [item, isOpen])
+    return emptyForm
+  })
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0]
@@ -179,6 +177,8 @@ export default function Items() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [deleteItem, setDeleteItem] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [selectedLabel, setSelectedLabel] = useState('All')
@@ -201,6 +201,20 @@ export default function Items() {
       loadItems()
     } catch (err) {
       alert(err.message)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteItem) return
+    setDeleting(true)
+    try {
+      await itemsApi.delete(deleteItem.id)
+      setDeleteItem(null)
+      loadItems()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -356,6 +370,13 @@ export default function Items() {
                       >
                         <Pencil size={15} />
                       </button>
+                      <button
+                        onClick={() => setDeleteItem(item)}
+                        title="Delete item"
+                        className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 cursor-pointer"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -426,6 +447,13 @@ export default function Items() {
                           >
                             <Pencil size={16} />
                           </button>
+                          <button
+                            onClick={() => setDeleteItem(item)}
+                            title="Delete item"
+                            className="p-2 rounded-lg hover:bg-rose-50 text-rose-600 cursor-pointer border-none bg-transparent"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -438,10 +466,22 @@ export default function Items() {
       </div>
 
       <ItemFormModal
+        key={editItem?.id || (modalOpen ? 'open-new' : 'closed')}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         item={editItem}
         onSave={loadItems}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(deleteItem)}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={handleDelete}
+        title="Delete Menu Item"
+        message={`Are you sure you want to permanently delete "${deleteItem?.name}"? This action cannot be undone.`}
+        confirmText="Yes, Delete Item"
+        variant="danger"
+        loading={deleting}
       />
     </div>
   )

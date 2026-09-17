@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
-  Plus,
-  Minus,
   Search,
   X,
   ShoppingBag,
@@ -9,20 +7,11 @@ import {
   ChevronLeft,
   RotateCcw,
   ChevronDown,
-  ChevronUp,
   UtensilsCrossed,
   LayoutGrid,
   List,
   Flame,
-  Sparkles,
-  ArrowUpDown,
-  Star,
-  CheckCircle2,
-  Zap,
   ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  Check
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { itemsApi } from '../../shared/api'
@@ -280,7 +269,6 @@ export default function Products() {
   // Carousel State
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
-  const [showSortMenu, setShowSortMenu] = useState(false)
 
   const { itemCount, totalAmount } = useCart()
 

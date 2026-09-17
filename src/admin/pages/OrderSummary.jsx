@@ -1,13 +1,23 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import moment from 'moment'
-import { Search, Phone, ChevronRight, ShoppingBag, IndianRupee, Clock } from 'lucide-react'
+import { Search, Phone, ChevronRight, ShoppingBag, IndianRupee, Clock, X } from 'lucide-react'
 import { ordersApi } from '../../shared/api'
 import OrderBadge from '../../shared/components/OrderBadge'
 import StatusPill from '../../shared/components/StatusPill'
 import GradientModal from '../../shared/components/GradientModal'
 import OrderDetailsContent from '../../shared/components/OrderDetailsContent'
 import ModernDatePicker from '../../shared/components/ModernDatePicker'
+import ModernSelect from '../../shared/components/ModernSelect'
 import Loader from '../../shared/components/Loader'
+
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'new', label: 'Ordered' },
+  { value: 'preparing', label: 'Preparing' },
+  { value: 'packed', label: 'Packed' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
 
 export default function OrderSummary() {
   const defaultFrom = moment().startOf('month').format('YYYY-MM-DD')
@@ -16,11 +26,13 @@ export default function OrderSummary() {
   const [orders, setOrders] = useState([])
   const [fromDate, setFromDate] = useState(defaultFrom)
   const [toDate, setToDate] = useState(defaultTo)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
 
-  const handleSearch = useCallback(async () => {
+  const handleSearch = async () => {
     setLoading(true)
     setSearched(true)
     try {
@@ -34,13 +46,39 @@ export default function OrderSummary() {
     } finally {
       setLoading(false)
     }
-  }, [fromDate, toDate])
+  }
 
   useEffect(() => {
-    handleSearch()
-  }, [])
+    let isMounted = true
+    const params = { fromDate: defaultFrom, toDate: defaultTo }
+    ordersApi.getAll(params)
+      .then((data) => {
+        if (isMounted) {
+          setOrders(data || [])
+          setSearched(true)
+        }
+      })
+      .catch(console.error)
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+    return () => {
+      isMounted = false
+    }
+  }, [defaultFrom, defaultTo])
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const q = searchQuery.toLowerCase().trim()
+      const matchesSearch =
+        !q ||
+        (o.customerName && o.customerName.toLowerCase().includes(q)) ||
+        (o.customerMobile && o.customerMobile.includes(q)) ||
+        (o.orderNo && String(o.orderNo).toLowerCase().includes(q))
+      const matchesStatus = statusFilter === 'all' || o.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [orders, searchQuery, statusFilter])
+
+  const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
 
   return (
     <div className="space-y-5">
@@ -50,8 +88,8 @@ export default function OrderSummary() {
         <p className="text-xs md:text-sm text-slate-500 mt-0.5 m-0">Filtered order history & sales reports</p>
       </div>
 
-      {/* Date Filter Card - Fully Mobile Responsive */}
-      <div className="bg-white border border-slate-200/80 p-3.5 sm:p-5 rounded-2xl shadow-2xs">
+      {/* Date & Filter Card - Fully Mobile Responsive */}
+      <div className="bg-white border border-slate-200/80 p-3.5 sm:p-5 rounded-2xl shadow-2xs space-y-3 sm:space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:items-end gap-3 sm:gap-4">
           <div className="w-full md:w-56">
             <ModernDatePicker
@@ -74,8 +112,40 @@ export default function OrderSummary() {
               className="btn-primary w-full sm:w-auto !py-2.5 !px-5 flex items-center justify-center gap-2 font-bold shadow-xs cursor-pointer text-xs sm:text-sm"
             >
               <Search size={16} />
-              <span>{loading ? 'Searching...' : 'Search Orders'}</span>
+              <span>{loading ? 'Searching...' : 'Search Range'}</span>
             </button>
+          </div>
+        </div>
+
+        {/* Search & Status Filter Row */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-slate-100">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Filter by customer name, phone, or #order..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-slate-800 focus:bg-white transition-all font-medium text-slate-800"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5 border-none bg-transparent"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="w-full sm:w-48">
+            <ModernSelect
+              options={STATUS_FILTER_OPTIONS}
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val)}
+              placeholder="Filter Status"
+            />
           </div>
         </div>
       </div>
@@ -88,8 +158,8 @@ export default function OrderSummary() {
               <ShoppingBag size={20} />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider m-0 truncate">Total Orders</p>
-              <h4 className="text-base sm:text-xl font-black text-slate-900 m-0 mt-0.5">{orders.length}</h4>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider m-0 truncate">Matching Orders</p>
+              <h4 className="text-base sm:text-xl font-black text-slate-900 m-0 mt-0.5">{filteredOrders.length}</h4>
             </div>
           </div>
           <div className="bg-white border border-slate-200/80 p-3.5 sm:p-4 rounded-2xl shadow-2xs flex items-center gap-3">
@@ -97,7 +167,7 @@ export default function OrderSummary() {
               <IndianRupee size={20} />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider m-0 truncate">Total Revenue</p>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider m-0 truncate">Filtered Revenue</p>
               <h4 className="text-base sm:text-xl font-black text-slate-900 m-0 mt-0.5">₹{totalRevenue.toFixed(2)}</h4>
             </div>
           </div>
@@ -113,13 +183,13 @@ export default function OrderSummary() {
           </div>
         ) : !searched ? (
           <div className="text-center py-12 text-slate-400 text-sm font-medium">Select dates and click search</div>
-        ) : orders.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 text-sm font-medium">No orders found for the selected date range</div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="text-center py-12 text-slate-400 text-sm font-medium">No orders matching the filter criteria</div>
         ) : (
           <>
             {/* Mobile View: Cards List (block md:hidden) */}
             <div className="block md:hidden divide-y divide-slate-100">
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <div
                   key={order.id}
                   onClick={() => setSelectedOrder(order)}
@@ -127,7 +197,24 @@ export default function OrderSummary() {
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <OrderBadge orderNo={order.orderNo} />
-                    <StatusPill status={order.status} />
+                    <div className="flex items-center gap-1.5">
+                      {order.orderType === 'dine-in' && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80">
+                          🍽️ Table {order.tableNo || '-'}
+                        </span>
+                      )}
+                      {order.orderType === 'delivery' && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200/80">
+                          🛵 Delivery
+                        </span>
+                      )}
+                      {(!order.orderType || order.orderType === 'takeaway') && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200/80">
+                          🥡 Takeaway
+                        </span>
+                      )}
+                      <StatusPill status={order.status} />
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between text-xs">
@@ -163,16 +250,32 @@ export default function OrderSummary() {
                   <tr>
                     <th>Date & Time</th>
                     <th>Order No</th>
+                    <th>Mode</th>
                     <th>Customer Details</th>
                     <th>Amount</th>
                     <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
+                  {filteredOrders.map((order) => (
                     <tr key={order.id} onClick={() => setSelectedOrder(order)}>
                       <td className="text-slate-500 font-medium">{moment(order.createdAt).format('DD MMM YYYY, hh:mm A')}</td>
                       <td><OrderBadge orderNo={order.orderNo} /></td>
+                      <td>
+                        {order.orderType === 'dine-in' ? (
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80">
+                            🍽️ Table {order.tableNo || '-'}
+                          </span>
+                        ) : order.orderType === 'delivery' ? (
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200/80" title={order.deliveryAddress}>
+                            🛵 Delivery
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-purple-50 text-purple-800 border border-purple-200/80">
+                            🥡 Takeaway
+                          </span>
+                        )}
+                      </td>
                       <td>
                         <p className="font-bold text-slate-900 m-0">{order.customerName}</p>
                         <p className="text-xs text-slate-500 font-medium m-0 mt-0.5">{order.customerMobile}</p>

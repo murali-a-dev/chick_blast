@@ -47,26 +47,27 @@ export function CustomerProvider({ children }) {
 
   // Initial load check: if customer exists in localStorage, re-validate with backend
   useEffect(() => {
-    const checkInitialLogin = async () => {
-      const targetMobile = customer?.MobileNo || customer?.mobile
-      if (!targetMobile) return
+    const targetMobile = customer?.MobileNo || customer?.mobile
+    if (!targetMobile) return
 
-      try {
-        const profileData = await customersApi.getProfile(targetMobile)
-        if (profileData?.customer) {
+    let isMounted = true
+    customersApi.getProfile(targetMobile)
+      .then((profileData) => {
+        if (isMounted && profileData?.customer) {
           setCustomer(profileData.customer)
           if (Array.isArray(profileData.orders)) {
             setOrders(profileData.orders)
           }
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         console.warn('Initial customer login validation check:', err.message)
-      }
-    }
+      })
 
-    if (customer?.MobileNo || customer?.mobile) {
-      checkInitialLogin()
+    return () => {
+      isMounted = false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Fetch orders when customer is active or changes
@@ -90,12 +91,29 @@ export function CustomerProvider({ children }) {
 
   useEffect(() => {
     const targetMobile = customer?.MobileNo || customer?.mobile
-    if (targetMobile) {
-      fetchCustomerOrders(targetMobile)
-    } else {
-      setOrders([])
+    if (!targetMobile) return
+
+    let isMounted = true
+    Promise.resolve().then(() => {
+      if (isMounted) setLoadingOrders(true)
+    })
+    customersApi.getOrderHistory(targetMobile)
+      .then((orderList) => {
+        if (isMounted) {
+          setOrders(Array.isArray(orderList) ? orderList : [])
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch customer orders:', err.message)
+      })
+      .finally(() => {
+        if (isMounted) setLoadingOrders(false)
+      })
+
+    return () => {
+      isMounted = false
     }
-  }, [customer?.MobileNo, customer?.mobile, fetchCustomerOrders])
+  }, [customer?.MobileNo, customer?.mobile])
 
   const openAuthModal = useCallback((config = {}) => {
     setAuthModalConfig(config)

@@ -12,7 +12,6 @@ import {
   ExternalLink,
   ChevronRight,
   ShieldCheck,
-  Sparkles,
   Calendar,
   AlertCircle,
   RefreshCw,
@@ -21,7 +20,6 @@ import { useCustomer } from '../../shared/context/CustomerContext'
 import { useCart } from '../../shared/context/CartContext'
 import StatusPill from '../../shared/components/StatusPill'
 import FssaiBadge from '../../shared/components/FssaiBadge'
-import logoImg from '../../assets/logo.png'
 
 export default function CustomerAccountModal() {
   const navigate = useNavigate()
@@ -41,10 +39,17 @@ export default function CustomerAccountModal() {
 
   const [activeTab, setActiveTab] = useState('orders') // 'orders' | 'profile'
   const [editingName, setEditingName] = useState(false)
-  const [nameInput, setNameInput] = useState('')
+  const [nameInput, setNameInput] = useState(() => customer?.Name || customer?.name || '')
   const [saving, setSaving] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+
+  const prevCustomerNameRef = useRef(customer?.Name || customer?.name)
+  const currentName = customer?.Name || customer?.name || ''
+  if (currentName !== prevCustomerNameRef.current) {
+    prevCustomerNameRef.current = currentName
+    setNameInput(currentName)
+  }
 
   const modalRef = useRef(null)
 
@@ -79,11 +84,6 @@ export default function CustomerAccountModal() {
     }
   }, [isAccountModalOpen])
 
-  useEffect(() => {
-    if (customer?.Name || customer?.name) {
-      setNameInput(customer.Name || customer.name)
-    }
-  }, [customer])
 
   if (!isAccountModalOpen || !isLoggedIn || !customer) return null
 
@@ -282,7 +282,7 @@ export default function CustomerAccountModal() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {orders.map((ord) => {
+                  {orders.map((ord, idx) => {
                     const orderId = ord.id || ord.orderId
                     const orderNo = ord.orderNo || (orderId ? orderId.split('-').pop() : '1')
                     const orderDate = ord.createdAt || ord.CreatedAt
@@ -297,7 +297,7 @@ export default function CustomerAccountModal() {
 
                     return (
                       <div
-                        key={orderId || Math.random()}
+                        key={orderId || `ord-${idx}`}
                         className="bg-white border border-gray-100 rounded-2xl p-4 shadow-xs hover:shadow-md transition-shadow space-y-3"
                       >
                         {/* Order Card Top Bar */}

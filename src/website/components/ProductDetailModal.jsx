@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { X, Minus, Plus, Sparkles, CheckCircle2 } from 'lucide-react'
+import { useEffect } from 'react'
+import { X, Sparkles, CheckCircle2 } from 'lucide-react'
 import FssaiBadge from '../../shared/components/FssaiBadge'
 import { useCart } from '../../shared/context/CartContext'
 import QuantityControl from './QuantityControl'
@@ -7,44 +7,19 @@ import QuantityControl from './QuantityControl'
 export default function ProductDetailModal({ product, isOpen, onClose }) {
   const { items, addItem, updateQuantity } = useCart()
 
-  const [shouldRender, setShouldRender] = useState(false)
-  const [active, setActive] = useState(false)
-
-  // Handle smooth Open and Close animation sequence + body scroll lock
+  // Lock background body scroll when open
   useEffect(() => {
     if (isOpen) {
-      setShouldRender(true)
       document.body.style.overflow = 'hidden'
       document.documentElement.style.overflow = 'hidden'
-      const timer = setTimeout(() => setActive(true), 20)
       return () => {
-        clearTimeout(timer)
-        document.body.style.overflow = ''
-        document.documentElement.style.overflow = ''
-      }
-    } else {
-      setActive(false)
-      const timer = setTimeout(() => {
-        setShouldRender(false)
-        document.body.style.overflow = ''
-        document.documentElement.style.overflow = ''
-      }, 250)
-      return () => {
-        clearTimeout(timer)
         document.body.style.overflow = ''
         document.documentElement.style.overflow = ''
       }
     }
   }, [isOpen])
 
-  const handleClose = () => {
-    setActive(false)
-    setTimeout(() => {
-      onClose()
-    }, 250)
-  }
-
-  if (!shouldRender || !product) return null
+  if (!isOpen || !product) return null
 
   const cartItem = items.find((i) => i.itemId === product.id)
   const quantity = cartItem?.quantity || 0
@@ -67,12 +42,8 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300 ease-out touch-none overscroll-none ${
-        active
-          ? 'bg-slate-950/60 backdrop-blur-md opacity-100'
-          : 'bg-slate-950/0 backdrop-blur-none opacity-0 pointer-events-none'
-      }`}
-      onClick={handleClose}
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200 touch-none overscroll-none"
+      onClick={onClose}
       onWheel={(e) => {
         if (e.target === e.currentTarget) {
           e.preventDefault()
@@ -87,16 +58,12 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
       }}
     >
       <div
-        className={`w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] sm:max-h-[85vh] flex flex-col border border-gray-100 transition-all duration-300 cubic-bezier(0.32,0.72,0,1) transform overscroll-contain ${
-          active
-            ? 'translate-y-0 scale-100 opacity-100'
-            : 'translate-y-full sm:translate-y-8 sm:scale-95 opacity-0'
-        }`}
+        className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] sm:max-h-[85vh] flex flex-col border border-gray-100 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 overscroll-contain"
         onClick={(e) => e.stopPropagation()}
         onWheel={(e) => e.stopPropagation()}
       >
         {/* Mobile Drag Indicator / Close Top Bar */}
-        <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto my-2.5 sm:hidden shrink-0 cursor-pointer" onClick={handleClose} />
+        <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto my-2.5 sm:hidden shrink-0 cursor-pointer" onClick={onClose} />
 
         {/* Product Image Header */}
         <div className="relative aspect-video w-full bg-gray-100 shrink-0 overflow-hidden">
@@ -118,7 +85,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
 
           {/* Close Button */}
           <button
-            onClick={handleClose}
+            onClick={onClose}
             className="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-900/60 text-white hover:bg-slate-900 transition-colors border-none cursor-pointer flex items-center justify-center backdrop-blur-md shadow-md z-10"
           >
             <X size={18} />

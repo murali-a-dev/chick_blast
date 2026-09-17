@@ -20,13 +20,9 @@ const emptyForm = {
 }
 
 function ComboFormModal({ isOpen, onClose, combo, allItems, onSave }) {
-  const [form, setForm] = useState(emptyForm)
-  const [uploading, setUploading] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
+  const [form, setForm] = useState(() => {
     if (combo) {
-      setForm({
+      return {
         name: combo.name || '',
         unit: combo.unit || 'combo',
         category: combo.category || 'Fried Chicken',
@@ -35,11 +31,17 @@ function ComboFormModal({ isOpen, onClose, combo, allItems, onSave }) {
         description: combo.description || '',
         imageUrl: combo.imageUrl || '',
         comboItemIds: combo.comboItemIds || [],
-      })
-    } else {
-      setForm(emptyForm)
+      }
     }
-  }, [combo, isOpen])
+    return emptyForm
+  })
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const selectedOriginalTotal = form.comboItemIds.reduce((sum, id) => {
+    const it = allItems.find((i) => i.id === id)
+    return sum + (it?.price || 0)
+  }, 0)
 
   const toggleItem = (id) => {
     const updatedIds = form.comboItemIds.includes(id)
@@ -129,9 +131,21 @@ function ComboFormModal({ isOpen, onClose, combo, allItems, onSave }) {
 
         {/* Price */}
         <div>
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1">
-            Combo Price (₹)
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block m-0">
+              Combo Price (₹)
+            </label>
+            {selectedOriginalTotal > 0 && (
+              <span className="text-xs text-slate-500">
+                Items total: <span className="font-semibold text-slate-800">₹{selectedOriginalTotal}</span>
+                {form.price && Number(form.price) < selectedOriginalTotal && (
+                  <span className="text-emerald-600 font-bold ml-1.5">
+                    (Save ₹{selectedOriginalTotal - Number(form.price)})
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
           <input
             className="input-field font-bold text-slate-900"
             type="number"
@@ -378,6 +392,12 @@ export default function ComboItems() {
             <div className="block md:hidden divide-y divide-slate-100">
               {filteredCombos.map((combo) => {
                 const itemNames = getItemNames(combo.comboItemIds) || []
+                const originalTotal = (combo.comboItemIds || []).reduce((sum, id) => {
+                  const it = allItems.find((i) => i.id === id)
+                  return sum + (it?.price || 0)
+                }, 0)
+                const savings = originalTotal > combo.price ? originalTotal - combo.price : 0
+                const savingsPercent = originalTotal > combo.price ? Math.round((savings / originalTotal) * 100) : 0
                 return (
                   <div
                     key={combo.id}
@@ -399,7 +419,17 @@ export default function ComboItems() {
                             <h4 className="font-bold text-sm text-slate-900 m-0 truncate">{combo.name}</h4>
                             <FssaiBadge isVeg={combo.label === 'Veg'} size={14} />
                           </div>
-                          <p className="font-black text-sm text-slate-900 m-0 mt-0.5">₹{combo.price}</p>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className="font-black text-sm text-slate-900">₹{combo.price}</span>
+                            {savings > 0 && (
+                              <>
+                                <span className="line-through text-slate-400 text-xs font-normal">₹{originalTotal}</span>
+                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded">
+                                  Save {savingsPercent}%
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -477,6 +507,12 @@ export default function ComboItems() {
                 <tbody>
                   {filteredCombos.map((combo) => {
                     const itemNames = getItemNames(combo.comboItemIds) || []
+                    const originalTotal = (combo.comboItemIds || []).reduce((sum, id) => {
+                      const it = allItems.find((i) => i.id === id)
+                      return sum + (it?.price || 0)
+                    }, 0)
+                    const savings = originalTotal > combo.price ? originalTotal - combo.price : 0
+                    const savingsPercent = originalTotal > combo.price ? Math.round((savings / originalTotal) * 100) : 0
                     return (
                       <tr key={combo.id} className={combo.isActive === false ? 'opacity-60 bg-gray-50' : ''}>
                         <td className="font-medium text-gray-900">{combo.name}</td>
@@ -492,7 +528,15 @@ export default function ComboItems() {
                         <td>
                           <FssaiBadge isVeg={combo.label === 'Veg'} size={18} />
                         </td>
-                        <td className="font-bold text-gray-900">₹{combo.price}</td>
+                        <td>
+                          <div className="font-bold text-gray-900">₹{combo.price}</div>
+                          {savings > 0 && (
+                            <div className="text-[11px] text-slate-400">
+                              <span className="line-through">₹{originalTotal}</span>
+                              <span className="text-emerald-600 font-bold ml-1">Save {savingsPercent}%</span>
+                            </div>
+                          )}
+                        </td>
                         <td>
                           {combo.isActive === false ? (
                             <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-200 text-gray-600">
@@ -544,6 +588,7 @@ export default function ComboItems() {
       </div>
 
       <ComboFormModal
+        key={editCombo?.id || (modalOpen ? 'open-new' : 'closed')}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         combo={editCombo}

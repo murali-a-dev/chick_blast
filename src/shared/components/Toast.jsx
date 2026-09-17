@@ -1,17 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { CheckCircle2, AlertCircle, X } from 'lucide-react'
-
-export function useToast() {
-  const [toast, setToast] = useState(null)
-
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type, id: Date.now() })
-  }
-
-  const hideToast = () => setToast(null)
-
-  return { toast, showToast, hideToast }
-}
 
 export default function Toast({ toast, onClose }) {
   useEffect(() => {

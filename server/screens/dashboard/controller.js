@@ -1,5 +1,15 @@
-import { fetchItemOrderCounts, fetchOrderGrowth } from './model.js'
+import { fetchItemOrderCounts, fetchOrderGrowth, fetchDashboardStats } from './model.js'
 import { validateDashboardParams } from './validation.js'
+
+export async function getDashboardStatsController(req, res) {
+  try {
+    const { date, fromDate, toDate } = req.query
+    const stats = await fetchDashboardStats({ date, fromDate, toDate })
+    res.json(stats)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
 
 export async function getItemCountsController(req, res) {
   try {

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   X,
-  Phone,
   User,
   ArrowRight,
   ArrowLeft,
@@ -9,7 +8,6 @@ import {
   Sparkles,
   CheckCircle2,
   AlertCircle,
-  KeyRound,
   RotateCcw,
 } from 'lucide-react'
 import { useCustomer } from '../../shared/context/CustomerContext'
@@ -72,22 +70,30 @@ export default function CustomerAuthModal() {
     }
   }, [isAuthModalOpen])
 
-  // Reset modal state when opened
+  const [prevIsOpen, setPrevIsOpen] = useState(isAuthModalOpen)
+  if (isAuthModalOpen && !prevIsOpen) {
+    setPrevIsOpen(true)
+    setStep('mobile')
+    setMobileNo(authModalConfig?.prefillMobile || '')
+    setName(authModalConfig?.prefillName || '')
+    setIsExistingUser(false)
+    setOtpDigits(['', '', '', ''])
+    setError('')
+    setLoading(false)
+    setResendTimer(30)
+  } else if (!isAuthModalOpen && prevIsOpen) {
+    setPrevIsOpen(false)
+  }
+
+  // Auto-focus mobile input when modal is opened
   useEffect(() => {
     if (isAuthModalOpen) {
-      setStep('mobile')
-      setMobileNo(authModalConfig.prefillMobile || '')
-      setName(authModalConfig.prefillName || '')
-      setIsExistingUser(false)
-      setOtpDigits(['', '', '', ''])
-      setError('')
-      setLoading(false)
-      setResendTimer(30)
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         mobileInputRef.current?.focus()
       }, 150)
+      return () => clearTimeout(timer)
     }
-  }, [isAuthModalOpen, authModalConfig])
+  }, [isAuthModalOpen])
 
   // Countdown timer for OTP
   useEffect(() => {
@@ -125,7 +131,7 @@ export default function CustomerAuthModal() {
         setStep('name')
         setTimeout(() => nameInputRef.current?.focus(), 150)
       }
-    } catch (err) {
+    } catch {
       // Fallback for offline/mock mode
       setIsExistingUser(false)
       setStep('name')
@@ -162,6 +168,23 @@ export default function CustomerAuthModal() {
     if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
       otpInputRefs[index - 1].current?.focus()
     }
+  }
+
+  // Clipboard paste support to auto-fill all 4 OTP boxes
+  const handleOtpPaste = (e) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4)
+    if (!pastedData) return
+
+    const newDigits = ['', '', '', '']
+    for (let i = 0; i < pastedData.length; i++) {
+      newDigits[i] = pastedData[i]
+    }
+    setOtpDigits(newDigits)
+    setError('')
+
+    const nextIndex = Math.min(pastedData.length, 3)
+    otpInputRefs[nextIndex].current?.focus()
   }
 
   // Quick fill demo OTP 1234
@@ -443,6 +466,7 @@ export default function CustomerAuthModal() {
                       value={digit}
                       onChange={(e) => handleOtpChange(idx, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                      onPaste={handleOtpPaste}
                       className="w-13 h-14 text-center text-2xl font-black rounded-2xl border-2 border-gray-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/15 outline-none transition-all shadow-xs bg-slate-50/50 focus:bg-white"
                     />
                   ))}

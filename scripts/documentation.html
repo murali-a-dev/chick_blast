@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chick Blast — Project Documentation & Tech Stack</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    @page {
+      size: A4;
+      margin: 16mm 14mm 16mm 14mm;
+      @bottom-right {
+        content: counter(page);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 8pt;
+        color: #64748b;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #0f172a;
+      background-color: #ffffff;
+      line-height: 1.55;
+      font-size: 9.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Cover / Hero Header */
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #431407 100%);
+      color: #ffffff;
+      border-radius: 14px;
+      padding: 26px 28px;
+      margin-bottom: 22px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(249, 115, 22, 0.3);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(249, 115, 22, 0.2);
+      border: 1px solid rgba(249, 115, 22, 0.4);
+      border-radius: 999px;
+      font-size: 8pt;
+      font-weight: 600;
+      color: #fdba74;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .hero h1 {
+      font-size: 24pt;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+      margin-bottom: 6px;
+      background: linear-gradient(to right, #ffffff, #fed7aa, #fb923c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 11pt;
+      color: #cbd5e1;
+      font-weight: 400;
+      max-width: 90%;
+      margin-bottom: 16px;
+    }
+
+    .meta-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .live-link-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: #ea580c;
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 5px 11px;
+      border-radius: 8px;
+      font-size: 8pt;
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+
+    /* Section Headings */
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+      margin-top: 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #fed7aa;
+      padding-bottom: 5px;
+      break-after: avoid;
+    }
+
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      break-after: avoid;
+    }
+
+    p {
+      color: #334155;
+      margin-bottom: 10px;
+      font-size: 9.5pt;
+    }
+
+    /* Cards & Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      break-inside: avoid;
+    }
+
+    .card.accent {
+      background: #fff7ed;
+      border-color: #ffedd5;
+    }
+
+    .card-title {
+      font-weight: 700;
+      font-size: 9.5pt;
+      color: #0f172a;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card p, .card ul {
+      font-size: 8.5pt;
+      color: #475569;
+      margin-bottom: 0;
+    }
+
+    /* Lists */
+    ul {
+      margin-left: 18px;
+      margin-bottom: 10px;
+    }
+
+    li {
+      margin-bottom: 4px;
+      font-size: 9pt;
+      color: #334155;
+    }
+
+    li strong {
+      color: #0f172a;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      margin-bottom: 14px;
+      font-size: 8.5pt;
+      break-inside: avoid;
+    }
+
+    th, td {
+      padding: 7px 10px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: #1e293b;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 7.5pt;
+      letter-spacing: 0.5px;
+      border-top: 1px solid #cbd5e1;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .badge-primary {
+      background: #ffedd5;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+    }
+
+    .badge-blue {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    .badge-green {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .badge-purple {
+      background: #f3e8ff;
+      color: #7e22ce;
+      border: 1px solid #e9d5ff;
+    }
+
+    .code-span {
+      font-family: 'JetBrains Mono', monospace;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 8pt;
+      border: 1px solid #e2e8f0;
+    }
+
+    pre {
+      font-family: 'JetBrains Mono', monospace;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 8pt;
+      line-height: 1.4;
+      overflow-x: auto;
+      margin-bottom: 12px;
+      border: 1px solid #334155;
+      break-inside: avoid;
+    }
+
+    /* Architecture diagram boxes */
+    .arch-flow {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      margin: 12px 0;
+      break-inside: avoid;
+    }
+
+    .arch-step {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-top: 3px solid #ea580c;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    }
+
+    .arch-step-title {
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+
+    .arch-step-desc {
+      font-size: 7.5pt;
+      color: #64748b;
+      line-height: 1.35;
+    }
+
+    /* Status progress line */
+    .status-timeline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin: 10px 0 14px 0;
+      break-inside: avoid;
+    }
+
+    .status-item {
+      text-align: center;
+      flex: 1;
+    }
+
+    .status-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #ea580c;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8pt;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+
+    .status-label {
+      font-size: 7.5pt;
+      font-weight: 600;
+      color: #9a3412;
+    }
+
+    .status-arrow {
+      color: #fdba74;
+      font-weight: bold;
+      font-size: 10pt;
+    }
+
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #64748b;
+      font-size: 7.5pt;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO SECTION -->
+  <div class="hero">
+    <div class="hero-tag">🍗 Platform Specification &amp; Manual</div>
+    <h1>CHICK BLAST</h1>
+    <div class="hero-subtitle">
+      Next-Generation Quick Service Restaurant (QSR) Web Platform, Real-Time Kitchen Display System (KDS) &amp; POS Operations Engine
+    </div>
+    <div class="meta-pills">
+      <a href="https://chick-blast.vercel.app" class="live-link-pill">
+        🌐 Live Deployment: chick-blast.vercel.app
+      </a>
+      <div class="meta-pill">📱 Version: 1.1.2</div>
+      <div class="meta-pill">⚡ Architecture: Full-Stack SPA &amp; REST API</div>
+      <div class="meta-pill">📅 Updated: September 2026</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: EXECUTIVE OVERVIEW -->
+  <h2>📌 1. Executive Summary &amp; Overview</h2>
+  <p>
+    <strong>Chick Blast</strong> is an end-to-end commercial restaurant technology platform designed for fried chicken outlets, cloud kitchens, and takeaway diners. The ecosystem delivers a frictionless omni-channel customer ordering experience coupled with an automated back-of-house Kitchen Display System (KDS) and store management analytics.
+  </p>
+
+  <div class="grid-3">
+    <div class="card accent">
+      <div class="card-title">🍗 Customer Storefront</div>
+      <p>High-converting, responsive food catalog with real-time search, interactive hero carousel, instant cart calculation, and multi-mode fulfillment (Dine-In, Takeaway, Home Delivery).</p>
+    </div>
+    <div class="card accent">
+      <div class="card-title">👨‍🍳 Kitchen Display (KDS)</div>
+      <p>Paperless kitchen operation pipeline with live order statuses, preparation countdowns, customer order tickets, and one-tap stage progression.</p>
+    </div>
+    <div class="card accent">
+      <div class="card-title">📊 POS &amp; Analytics</div>
+      <p>Store management dashboard with revenue analytics, Recharts visualizations, dynamic product CRUD, bundle/combo deals builder, and date-filtered order reporting.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2: TECH STACK MATRIX -->
+  <h2>🛠️ 2. Comprehensive Technology Stack</h2>
+  
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 22%;">Layer</th>
+        <th style="width: 25%;">Technology</th>
+        <th style="width: 15%;">Version</th>
+        <th>Architectural Role &amp; Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Frontend Framework</strong></td>
+        <td><span class="badge badge-blue">React.js</span></td>
+        <td><code>19.2.7</code></td>
+        <td>Modern concurrent rendering, hooks, and component lifecycle for reactive UI.</td>
+      </tr>
+      <tr>
+        <td><strong>Client Bundler</strong></td>
+        <td><span class="badge badge-purple">Vite</span></td>
+        <td><code>8.1.1</code></td>
+        <td>Lightning-fast HMR dev server and highly optimized production tree-shaking.</td>
+      </tr>
+      <tr>
+        <td><strong>Design System</strong></td>
+        <td><span class="badge badge-primary">Tailwind CSS</span></td>
+        <td><code>4.3.3</code></td>
+        <td>Tailwind v4 zero-runtime CSS with modern dark UI palettes and micro-animations.</td>
+      </tr>
+      <tr>
+        <td><strong>Client Routing</strong></td>
+        <td><span class="badge badge-blue">React Router DOM</span></td>
+        <td><code>7.18.1</code></td>
+        <td>Declarative multi-layout routing (Storefront Layout vs. Admin Layout).</td>
+      </tr>
+      <tr>
+        <td><strong>Data Visualization</strong></td>
+        <td><span class="badge badge-green">Recharts</span></td>
+        <td><code>3.10.0</code></td>
+        <td>Responsive sales charts, revenue trends, and top dishes analytics in POS.</td>
+      </tr>
+      <tr>
+        <td><strong>Iconography</strong></td>
+        <td><span class="badge badge-primary">Lucide React</span></td>
+        <td><code>1.26.0</code></td>
+        <td>Consistent, lightweight SVG iconography across mobile and desktop.</td>
+      </tr>
+      <tr>
+        <td><strong>HTTP Networking</strong></td>
+        <td><span class="badge badge-blue">Axios</span></td>
+        <td><code>1.18.1</code></td>
+        <td>Promise-based HTTP client with global loader triggers &amp; response handling.</td>
+      </tr>
+      <tr>
+        <td><strong>Backend Gateway</strong></td>
+        <td><span class="badge badge-purple">Express.js (Node.js)</span></td>
+        <td><code>5.2.1</code></td>
+        <td>High-performance REST API router, CORS configuration, and static serving.</td>
+      </tr>
+      <tr>
+        <td><strong>Database &amp; Cloud</strong></td>
+        <td><span class="badge badge-primary">Firebase Admin / Firestore</span></td>
+        <td><code>14.2.0</code></td>
+        <td>Real-time NoSQL document database storing items, orders, and customer logs.</td>
+      </tr>
+      <tr>
+        <td><strong>File &amp; Image Engine</strong></td>
+        <td><span class="badge badge-green">Multer</span></td>
+        <td><code>2.2.0</code></td>
+        <td>Multipart form data parser for uploading food photography and thumbnails.</td>
+      </tr>
+      <tr>
+        <td><strong>Date &amp; Time Ops</strong></td>
+        <td><span class="badge badge-blue">Moment.js</span></td>
+        <td><code>2.30.1</code></td>
+        <td>Timezone-aware order timestamping, daily summary cuts, and filtering.</td>
+      </tr>
+      <tr>
+        <td><strong>Deployment (Client)</strong></td>
+        <td><span class="badge badge-primary">Vercel</span></td>
+        <td>Production</td>
+        <td>Global Edge Network with Single Page App rewrites (<a href="https://chick-blast.vercel.app">chick-blast.vercel.app</a>).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 3: SYSTEM ARCHITECTURE & DATA FLOW -->
+  <h2>🏗️ 3. System Architecture &amp; Data Pipeline</h2>
+  <p>
+    The system follows a decoupled Single Page Application (SPA) architecture with an Express.js API gateway and Google Cloud Firestore.
+  </p>
+
+  <div class="arch-flow">
+    <div class="arch-step">
+      <div class="arch-step-title">1. Storefront Client</div>
+      <div class="arch-step-desc">React 19 SPA routes orders, cart state, and customer persistence via context providers.</div>
+    </div>
+    <div class="arch-step">
+      <div class="arch-step-title">2. API Gateway</div>
+      <div class="arch-step-desc">Express 5 router executes validation, caching headers, and Multer multipart processing.</div>
+    </div>
+    <div class="arch-step">
+      <div class="arch-step-title">3. Firebase Cloud</div>
+      <div class="arch-step-desc">Firestore NoSQL stores documents with atomic updates for live inventory and orders.</div>
+    </div>
+    <div class="arch-step">
+      <div class="arch-step-title">4. KDS &amp; POS Admin</div>
+      <div class="arch-step-desc">Live synchronization updates kitchen monitors and administrative dashboards.</div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: DETAILED FEATURE SPECIFICATIONS -->
+  <h2>⚡ 4. Detailed Feature Specifications</h2>
+
+  <h3>🛒 Customer-Facing Storefront Features</h3>
+  <ul>
+    <li><strong>Interactive Digital Catalog:</strong> Real-time category selector tabs (<em>Crispy Fried Chicken, Burgers, Combos, Beverages, Fries &amp; Sides, Desserts</em>) with immediate search matching.</li>
+    <li><strong>Signature Hero Showcase:</strong> Rotating dynamic carousel spotlighting signature recipes with spice ratings, prep times, and quick-add shortcuts.</li>
+    <li><strong>Comprehensive Product Modal:</strong> Shows detailed nutritional badges, portion sizes, spice level indicators, and certified FSSAI food hygiene tags.</li>
+    <li><strong>Smart Multi-Channel Cart:</strong>
+      <ul>
+        <li>Switch between <strong>Takeaway</strong>, <strong>Dine-In</strong>, or <strong>Home Delivery</strong>.</li>
+        <li>Subtotal, delivery surcharges, GST/tax calculation, and net billing automatically computed.</li>
+        <li>Instant customer profile recall: Name, phone number, and address remember past orders to provide frictionless one-click checkout.</li>
+      </ul>
+    </li>
+    <li><strong>Real-Time Visual Order Tracker:</strong> Customers can enter their Order ID or Phone Number to monitor kitchen milestones:</li>
+  </ul>
+
+  <!-- Status progression timeline -->
+  <div class="status-timeline">
+    <div class="status-item">
+      <div class="status-dot">1</div>
+      <div class="status-label">Pending ⏳</div>
+    </div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-item">
+      <div class="status-dot">2</div>
+      <div class="status-label">Preparing 👨‍🍳</div>
+    </div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-item">
+      <div class="status-dot">3</div>
+      <div class="status-label">Packed 📦</div>
+    </div>
+    <div class="status-arrow">&rarr;</div>
+    <div class="status-item">
+      <div class="status-dot">4</div>
+      <div class="status-label">Delivered 🎉</div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Custom Food-Themed 404 Experience:</strong> Playful fallback page (<em>"Oops! This Chicken Flew Away 🍗"</em>) preventing lost conversions and guiding customers back to the menu.</li>
+  </ul>
+
+  <h3>👨‍🍳 Kitchen Display System (KDS) &amp; Admin POS Features</h3>
+  <ul>
+    <li><strong>Live Kitchen Stream (KDS):</strong> Real-time card feed showing active tickets with elapsed timers, order itemizations, special requests, and single-click stage advances.</li>
+    <li><strong>Executive Analytics Dashboard:</strong> Key metrics at a glance: Total Daily/Weekly Gross Revenue, Completed Ticket Count, Average Ticket Size, and Recharts graphical performance curves.</li>
+    <li><strong>Date-Filtered Order History:</strong> Query orders across custom date spans (<code>fromDate</code> to <code>toDate</code>) with customer phone lookup and itemized audit receipts.</li>
+    <li><strong>Catalog CRUD Management:</strong> Add new menu items, edit prices, toggle stock availability, and update descriptions seamlessly.</li>
+    <li><strong>Combo Builder Engine:</strong> Configure combo deals grouping multiple items into bundled value meals with customized promotional discounts.</li>
+    <li><strong>Asset Upload Pipeline:</strong> Direct image uploading handled via Multer middleware into server storage with generated asset URLs.</li>
+  </ul>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 5: REST API SPECIFICATIONS -->
+  <h2>📡 5. REST API Specifications</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 12%;">Method</th>
+        <th style="width: 28%;">Endpoint</th>
+        <th style="width: 25%;">Parameters / Body</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/api/health</code></td>
+        <td>None</td>
+        <td>Server status and health check probe.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/api/items</code></td>
+        <td><code>?category=...</code></td>
+        <td>Fetch all active menu items and bundled combo meals.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">POST</span></td>
+        <td><code>/api/items</code></td>
+        <td>JSON Item Payload</td>
+        <td>Add a new food item or combo package into catalog.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-purple">PUT</span></td>
+        <td><code>/api/items/:id</code></td>
+        <td>Updated Fields</td>
+        <td>Update pricing, stock availability, or description of an item.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-primary">DELETE</span></td>
+        <td><code>/api/items/:id</code></td>
+        <td>URL <code>:id</code></td>
+        <td>Remove or deactivate an item from active menu listings.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/api/orders</code></td>
+        <td><code>?fromDate=&amp;toDate=&amp;phone=</code></td>
+        <td>Retrieve orders list with flexible date and phone filtering.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/api/orders/:id</code></td>
+        <td>URL <code>:id</code></td>
+        <td>Fetch detailed progress status and receipt for a single order.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">POST</span></td>
+        <td><code>/api/orders</code></td>
+        <td>Order Ticket Payload</td>
+        <td>Submit and store new customer order with line items and customer info.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-purple">PATCH</span></td>
+        <td><code>/api/orders/:id/status</code></td>
+        <td><code>{ "status": "Preparing" }</code></td>
+        <td>Advance order stage (Pending &rarr; Preparing &rarr; Packed &rarr; Delivered).</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/api/dashboard/stats</code></td>
+        <td><code>?range=today|week|month</code></td>
+        <td>Compute aggregate revenue, order counts, and top selling items.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/api/customers</code></td>
+        <td><code>?phone=...</code></td>
+        <td>Query repeat customer information and historic order frequencies.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">POST</span></td>
+        <td><code>/api/upload</code></td>
+        <td>Multipart Form File</td>
+        <td>Upload product imagery to server assets storage via Multer.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 6: DATA MODELS -->
+  <h2>🗄️ 6. Core Database Schema (Firestore)</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>Order Schema (<code class="code-span">orders/{orderId}</code>)</h3>
+      <pre>{
+  "orderId": "CB-84920",
+  "customerName": "Arun Kumar",
+  "customerPhone": "9876543210",
+  "orderType": "Delivery", // Dine-In, Takeaway, Delivery
+  "deliveryAddress": "Flat 4B, Emerald Apts, MG Road",
+  "items": [
+    {
+      "id": "ck_01",
+      "name": "6pc Hot Crispy Wings",
+      "price": 349,
+      "quantity": 2
+    }
+  ],
+  "subtotal": 698,
+  "tax": 34.9,
+  "deliveryFee": 40,
+  "total": 772.9,
+  "status": "Preparing", // Pending, Preparing, Packed, Delivered
+  "createdAt": "2026-09-11T14:20:00Z"
+}</pre>
+    </div>
+
+    <div>
+      <h3>Item Schema (<code class="code-span">items/{itemId}</code>)</h3>
+      <pre>{
+  "id": "ck_01",
+  "name": "6pc Hot Crispy Wings",
+  "category": "Crispy Chicken",
+  "price": 349,
+  "description": "Signature crispy wings coated in spicy pepper sauce",
+  "image": "/uploads/wings_spicy.jpg",
+  "isAvailable": true,
+  "spiceLevel": "Extra Hot",
+  "isCombo": false,
+  "comboDetails": null,
+  "rating": 4.9,
+  "createdAt": "2026-09-01T10:00:00Z"
+}</pre>
+    </div>
+  </div>
+
+  <!-- PAGE BREAK -->
+  <div class="page-break"></div>
+
+  <!-- SECTION 7: PROJECT REPOSITORY STRUCTURE -->
+  <h2>📁 7. Codebase &amp; Folder Organization</h2>
+
+  <pre>chick_blast/
+├── public/                 # Static branding assets, icons, and web manifest
+├── server/                 # Express.js REST API Server
+│   ├── config/             # Firebase Admin credentials and Firestore instance
+│   ├── screens/            # Domain-driven backend modular routes &amp; controllers
+│   │   ├── customers/      # Customer history models &amp; lookup controller
+│   │   ├── dashboard/      # Sales analytics aggregations and KPIs
+│   │   ├── items/          # Menu item catalog &amp; combo CRUD controllers
+│   │   ├── orders/         # Order placement &amp; status transition engine
+│   │   └── upload/         # Multer multipart image upload router
+│   └── index.js            # Express server entry point &amp; middleware bindings
+├── src/                    # React 19 Frontend Client
+│   ├── admin/              # Kitchen POS &amp; Management Interface
+│   │   ├── components/     # Admin widgets, order tickets, modals
+│   │   ├── layout/         # Sidebar navigation &amp; admin header
+│   │   └── pages/          # Dashboard, LiveOrders, OrderSummary, Items, ComboItems
+│   ├── website/            # Customer-Facing Storefront
+│   │   ├── components/     # ProductCard, DetailModal, QuantityControl
+│   │   ├── layout/         # Public header with cart badges &amp; footer
+│   │   └── pages/          # Products (Menu), Cart, OrderStatus, NotFound (404)
+│   ├── shared/             # Cross-application shared logic &amp; UI tokens
+│   │   ├── api/            # Axios endpoints &amp; centralized API instances
+│   │   ├── components/     # StatusPill, OrderBadge, ModernDatePicker, Loader
+│   │   └── context/        # CartContext, CustomerContext (State Persistence)
+│   ├── App.jsx             # React Router v7 routes declaration
+│   └── main.jsx            # Application bootstrap &amp; Context wrappers
+├── vercel.json             # Vercel Single Page App routing configuration
+├── package.json            # Scripts &amp; dependency manifest
+└── vite.config.js          # Vite build pipeline &amp; local proxy settings</pre>
+
+  <!-- SECTION 8: SETUP & DEPLOYMENT -->
+  <h2>🚀 8. Getting Started &amp; Deployment Guide</h2>
+
+  <div class="card accent" style="margin-bottom: 12px;">
+    <div class="card-title">🌐 Live Production URL</div>
+    <p>
+      The live customer application is accessible at: 
+      <a href="https://chick-blast.vercel.app" style="color: #c2410c; font-weight: bold; text-decoration: underline;">
+        https://chick-blast.vercel.app
+      </a>
+    </p>
+  </div>
+
+  <h3>Local Environment Setup</h3>
+  <pre># 1. Clone repository
+git clone https://github.com/muraliofficial/chick_blast.git
+cd chick_blast
+
+# 2. Install dependencies
+npm install
+
+# 3. Configure environment variables in .env
+PORT=3001
+VITE_API_URL=http://localhost:3001
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=your_client_email@your_project.iam.gserviceaccount.com
+
+# 4. Start concurrent development server
+npm run dev</pre>
+
+  <div class="grid-3" style="margin-top: 10px;">
+    <div class="card">
+      <div class="card-title">🍔 Customer Storefront</div>
+      <p>Accessible at <code>http://localhost:5173</code></p>
+    </div>
+    <div class="card">
+      <div class="card-title">👨‍🍳 Kitchen KDS &amp; POS</div>
+      <p>Accessible at <code>http://localhost:5173/admin</code></p>
+    </div>
+    <div class="card">
+      <div class="card-title">⚙️ Express REST API</div>
+      <p>Accessible at <code>http://localhost:3001/api</code></p>
+    </div>
+  </div>
+
+  <!-- FOOTER NOTE -->
+  <div class="footer-note">
+    <span>Chick Blast &copy; 2026. All rights reserved.</span>
+    <span>Live Platform: <a href="https://chick-blast.vercel.app" style="color: #ea580c; text-decoration: none;">https://chick-blast.vercel.app</a></span>
+    <span>Generated: September 11, 2026</span>
+  </div>
+
+</body>
+</html>

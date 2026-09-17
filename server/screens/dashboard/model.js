@@ -1,5 +1,5 @@
 import { getDb } from '../../config/firebase.js'
-import { ORDER_STATUSES, getTodayDate } from '../orders/model.js'
+import { ORDER_STATUSES, ACTIVE_STATUSES, getTodayDate } from '../orders/model.js'
 
 const dashboardCache = new Map()
 const DASHBOARD_CACHE_TTL = 30 * 1000 // 30 seconds
@@ -16,6 +16,10 @@ function getCached(key) {
 
 function setCache(key, data) {
   dashboardCache.set(key, { data, time: Date.now() })
+}
+
+export function invalidateDashboardCache() {
+  dashboardCache.clear()
 }
 
 export async function fetchItemOrderCounts(opts) {
@@ -114,3 +118,72 @@ export async function fetchOrderGrowth(month, year) {
   setCache(cacheKey, result)
   return result
 }
+
+export async function fetchDashboardStats(opts = {}) {
+  const db = getDb()
+  const today = getTodayDate()
+  const fromDate = opts.fromDate || opts.date || today
+  const toDate = opts.toDate || opts.date || today
+
+  const cacheKey = `stats_${fromDate}_${toDate}`
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+
+  if (!db) {
+    return {
+      totalRevenue: 0,
+      totalOrders: 0,
+      averageOrderValue: 0,
+      activeOrdersCount: 0,
+      deliveredOrdersCount: 0,
+      cancelledOrdersCount: 0,
+    }
+  }
+
+  // 1. Fetch orders in the selected date range
+  let rangeQuery = db.collection('orders')
+  if (fromDate === toDate) {
+    rangeQuery = rangeQuery.where('orderDate', '==', fromDate)
+  } else {
+    rangeQuery = rangeQuery.where('orderDate', '>=', fromDate).where('orderDate', '<=', toDate)
+  }
+
+  const [rangeSnapshot, activeSnapshot] = await Promise.all([
+    rangeQuery.get(),
+    db.collection('orders').where('status', 'in', ACTIVE_STATUSES).get(),
+  ])
+
+  let totalRevenue = 0
+  let totalOrders = 0
+  let deliveredOrdersCount = 0
+  let cancelledOrdersCount = 0
+
+  rangeSnapshot.docs.forEach((doc) => {
+    const data = doc.data()
+    if (data.status === ORDER_STATUSES.CANCELLED) {
+      cancelledOrdersCount++
+      return
+    }
+    totalOrders++
+    totalRevenue += Number(data.totalAmount || 0)
+    if (data.status === ORDER_STATUSES.DELIVERED) {
+      deliveredOrdersCount++
+    }
+  })
+
+  const activeOrdersCount = activeSnapshot.size
+  const averageOrderValue = totalOrders > 0 ? Math.round((totalRevenue / totalOrders) * 100) / 100 : 0
+
+  const result = {
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    totalOrders,
+    averageOrderValue,
+    activeOrdersCount,
+    deliveredOrdersCount,
+    cancelledOrdersCount,
+  }
+
+  setCache(cacheKey, result)
+  return result
+}
+

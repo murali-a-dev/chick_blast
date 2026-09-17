@@ -15,7 +15,7 @@ import moment from 'moment'
 import { dashboardApi } from '../../shared/api'
 import ModernDatePicker from '../../shared/components/ModernDatePicker'
 import ModernSelect from '../../shared/components/ModernSelect'
-import { TrendingUp, ShoppingBag, PieChart as PieIcon, Award, Calendar, Filter } from 'lucide-react'
+import { TrendingUp, ShoppingBag, PieChart as PieIcon, Award, Calendar, Filter, IndianRupee } from 'lucide-react'
 import logoImg from '../../assets/logo.png'
 import { DATE_RANGES } from '../../shared/constants/index'
 
@@ -26,6 +26,7 @@ export default function Dashboard() {
   const currentMonth = new Date().getMonth() + 1
   const currentYear = new Date().getFullYear()
 
+  const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, averageOrderValue: 0, activeOrders: 0 })
   const [activePreset, setActivePreset] = useState('today')
   const [fromDate, setFromDate] = useState(todayStr)
   const [toDate, setToDate] = useState(todayStr)
@@ -34,6 +35,10 @@ export default function Dashboard() {
   const [growthMonth, setGrowthMonth] = useState(currentMonth)
   const [growthYear, setGrowthYear] = useState(currentYear)
   const [growthData, setGrowthData] = useState([])
+
+  useEffect(() => {
+    dashboardApi.stats().then(setStats).catch(console.error)
+  }, [])
 
   // Calculate dates based on selected preset
   const handlePresetSelect = (presetKey) => {
@@ -128,6 +133,64 @@ export default function Dashboard() {
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 m-0">Dashboard Overview</h2>
             <p className="text-xs md:text-sm text-gray-500 mt-0.5 m-0">Real-time metrics & store analytics</p>
           </div>
+        </div>
+      </div>
+
+      {/* 4 Core Business KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-slate-300">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Total Revenue</span>
+              <IndianRupee size={16} className="text-emerald-400" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black mt-1 m-0">
+              ₹{stats.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </h3>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2 m-0">Delivered store revenue</p>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Total Orders</span>
+              <ShoppingBag size={16} className="text-slate-600" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 m-0">
+              {stats.totalOrders}
+            </h3>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-2 m-0">All recorded orders</p>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Avg Order Value</span>
+              <TrendingUp size={16} className="text-indigo-600" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 m-0">
+              ₹{stats.averageOrderValue.toFixed(2)}
+            </h3>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-2 m-0">Per delivered order</p>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Active In Kitchen</span>
+              <span className="flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 m-0">
+              {stats.activeOrders}
+            </h3>
+          </div>
+          <p className="text-[11px] text-emerald-600 font-bold mt-2 m-0">Live kitchen queue</p>
         </div>
       </div>
 

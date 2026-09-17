@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { AlertTriangle, XCircle, Check, X, Loader2 } from 'lucide-react'
+import { useEffect } from 'react'
+import { AlertTriangle, XCircle, X, Loader2 } from 'lucide-react'
 
 export default function ConfirmModal({
   isOpen,
@@ -12,36 +12,18 @@ export default function ConfirmModal({
   variant = 'danger', // 'danger' | 'warning' | 'info'
   loading = false,
 }) {
-  const [shouldRender, setShouldRender] = useState(false)
-  const [active, setActive] = useState(false)
-
   useEffect(() => {
     if (isOpen) {
-      setShouldRender(true)
       document.body.style.overflow = 'hidden'
       document.documentElement.style.overflow = 'hidden'
-      const timer = setTimeout(() => setActive(true), 20)
       return () => {
-        clearTimeout(timer)
-        document.body.style.overflow = ''
-        document.documentElement.style.overflow = ''
-      }
-    } else {
-      setActive(false)
-      const timer = setTimeout(() => {
-        setShouldRender(false)
-        document.body.style.overflow = ''
-        document.documentElement.style.overflow = ''
-      }, 200)
-      return () => {
-        clearTimeout(timer)
         document.body.style.overflow = ''
         document.documentElement.style.overflow = ''
       }
     }
   }, [isOpen])
 
-  if (!shouldRender) return null
+  if (!isOpen) return null
 
   const variantStyles = {
     danger: {
@@ -66,11 +48,7 @@ export default function ConfirmModal({
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-200 ease-out touch-none overscroll-none ${
-        active
-          ? 'bg-slate-950/60 backdrop-blur-md opacity-100'
-          : 'bg-slate-950/0 backdrop-blur-none opacity-0 pointer-events-none'
-      }`}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200 touch-none overscroll-none"
       onClick={loading ? undefined : onClose}
       onWheel={(e) => {
         if (e.target === e.currentTarget) {
@@ -86,9 +64,7 @@ export default function ConfirmModal({
       }}
     >
       <div
-        className={`w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-gray-100 space-y-5 transition-all duration-200 ease-out transform ${
-          active ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'
-        }`}
+        className="w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-gray-100 space-y-5 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
         onWheel={(e) => e.stopPropagation()}
       >

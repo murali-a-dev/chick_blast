@@ -1,5 +1,5 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
-import { ShoppingCart, User, ShieldCheck, KeyRound } from 'lucide-react'
+import { ShoppingCart, User, ShieldCheck } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import CustomerAuthModal from '../components/CustomerAuthModal'
 import CustomerAccountModal from '../components/CustomerAccountModal'

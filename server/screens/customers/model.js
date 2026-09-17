@@ -175,7 +175,7 @@ export async function updateCustomerInDb(idOrDid, updateData) {
     return customer
   }
 
-  let docRef = null
+  let docRef
 
   // Try direct doc reference in 'customers'
   const directDoc = await db.collection('customers').doc(idOrDid).get()

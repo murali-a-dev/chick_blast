@@ -95,6 +95,18 @@ export const customersApi = {
 }
 
 export const dashboardApi = {
+  stats: (dateOrParams) => {
+    if (typeof dateOrParams === 'string') {
+      const query = dateOrParams ? `?date=${dateOrParams}` : ''
+      return request(`/dashboard/stats${query}`)
+    }
+    const params = new URLSearchParams()
+    if (dateOrParams?.date) params.set('date', dateOrParams.date)
+    if (dateOrParams?.fromDate) params.set('fromDate', dateOrParams.fromDate)
+    if (dateOrParams?.toDate) params.set('toDate', dateOrParams.toDate)
+    const query = params.toString()
+    return request(`/dashboard/stats${query ? `?${query}` : ''}`)
+  },
   itemCounts: (dateOrParams) => {
     if (typeof dateOrParams === 'string') {
       const query = dateOrParams ? `?date=${dateOrParams}` : ''
@@ -114,6 +126,41 @@ export const dashboardApi = {
     const query = params.toString()
     return request(`/dashboard/order-growth${query ? `?${query}` : ''}`)
   },
+}
+
+export const adminApi = {
+  login: (pin) =>
+    request('/admin/auth', {
+      method: 'POST',
+      body: JSON.stringify({ pin }),
+    }),
+}
+
+export const couponsApi = {
+  getAll: () => request('/coupons').then((res) => res?.data || res || []),
+  create: (data) =>
+    request('/coupons', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    request(`/coupons/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id) =>
+    request(`/coupons/${id}`, {
+      method: 'DELETE',
+    }),
+  validate: (code, subtotal) =>
+    request('/coupons/validate', {
+      method: 'POST',
+      body: JSON.stringify({ code, subtotal }),
+    }),
+}
+
+export const readyForPickupApi = {
+  getOrders: () => request('/ready_for_pickup').then((res) => res?.data || res || []),
 }
 
 export async function uploadImage(file) {
