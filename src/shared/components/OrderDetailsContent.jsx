@@ -65,24 +65,6 @@ export default function OrderDetailsContent({ order }) {
             </div>
           </div>
         </div>
-
-        {/* Fulfillment Type */}
-        <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-          <span className="text-slate-500 font-medium">Fulfillment Type:</span>
-          {order.orderType === 'dine-in' ? (
-            <span className="font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
-              🍽️ Dine-In {order.tableNo ? `(Table ${order.tableNo})` : ''}
-            </span>
-          ) : order.orderType === 'delivery' ? (
-            <span className="font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded-md">
-              🛵 Delivery {order.deliveryAddress ? `(${order.deliveryAddress})` : ''}
-            </span>
-          ) : (
-            <span className="font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-md">
-              🥡 Takeaway
-            </span>
-          )}
-        </div>
       </div>
 
       {/* Ordered Items Table List */}

@@ -198,21 +198,6 @@ export default function OrderSummary() {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <OrderBadge orderNo={order.orderNo} />
                     <div className="flex items-center gap-1.5">
-                      {order.orderType === 'dine-in' && (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80">
-                          🍽️ Table {order.tableNo || '-'}
-                        </span>
-                      )}
-                      {order.orderType === 'delivery' && (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200/80">
-                          🛵 Delivery
-                        </span>
-                      )}
-                      {(!order.orderType || order.orderType === 'takeaway') && (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200/80">
-                          🥡 Takeaway
-                        </span>
-                      )}
                       <StatusPill status={order.status} />
                     </div>
                   </div>
@@ -250,7 +235,6 @@ export default function OrderSummary() {
                   <tr>
                     <th>Date & Time</th>
                     <th>Order No</th>
-                    <th>Mode</th>
                     <th>Customer Details</th>
                     <th>Amount</th>
                     <th>Status</th>
@@ -261,21 +245,6 @@ export default function OrderSummary() {
                     <tr key={order.id} onClick={() => setSelectedOrder(order)}>
                       <td className="text-slate-500 font-medium">{moment(order.createdAt).format('DD MMM YYYY, hh:mm A')}</td>
                       <td><OrderBadge orderNo={order.orderNo} /></td>
-                      <td>
-                        {order.orderType === 'dine-in' ? (
-                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200/80">
-                            🍽️ Table {order.tableNo || '-'}
-                          </span>
-                        ) : order.orderType === 'delivery' ? (
-                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200/80" title={order.deliveryAddress}>
-                            🛵 Delivery
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-purple-50 text-purple-800 border border-purple-200/80">
-                            🥡 Takeaway
-                          </span>
-                        )}
-                      </td>
                       <td>
                         <p className="font-bold text-slate-900 m-0">{order.customerName}</p>
                         <p className="text-xs text-slate-500 font-medium m-0 mt-0.5">{order.customerMobile}</p>

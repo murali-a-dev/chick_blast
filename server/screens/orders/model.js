@@ -37,6 +37,10 @@ export function canTransition(from, to) {
 
 function serializeDoc(doc) {
   const data = doc.data()
+  delete data.mode
+  delete data.orderType
+  delete data.tableNo
+  delete data.deliveryAddress
   return {
     id: doc.id,
     ...data,
@@ -83,9 +87,7 @@ export async function createOrderInDb(orderData) {
     customerDid: cDid,
   }
 
-  const orderType = 'takeaway'
-  const tableNo = ''
-  const deliveryAddress = ''
+
 
   // Validate items against canonical database catalog
   let verifiedItems
@@ -196,9 +198,6 @@ export async function createOrderInDb(orderData) {
       id: customId,
       orderNo,
       orderDate,
-      orderType,
-      tableNo,
-      deliveryAddress,
       customerName: cName,
       customerMobile: cMobile,
       customerDid: cDid,
@@ -225,9 +224,6 @@ export async function createOrderInDb(orderData) {
   const order = {
     orderNo,
     orderDate,
-    orderType,
-    tableNo,
-    deliveryAddress,
     customerName: cName,
     customerMobile: cMobile,
     customerDid: cDid,

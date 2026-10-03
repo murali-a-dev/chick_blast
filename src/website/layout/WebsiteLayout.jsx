@@ -1,5 +1,5 @@
-import { Outlet, Link, NavLink } from 'react-router-dom'
-import { ShoppingCart, User, ShieldCheck, Tv } from 'lucide-react'
+import { Outlet, Link } from 'react-router-dom'
+import { ShoppingCart, User, ShieldCheck } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import CustomerAuthModal from '../components/CustomerAuthModal'
 import CustomerAccountModal from '../components/CustomerAccountModal'
@@ -34,48 +34,6 @@ export default function WebsiteLayout() {
               </span>
             </div>
           </Link>
-
-          {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-1.5 lg:gap-2">
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) =>
-                `px-3.5 py-2 rounded-xl text-sm font-bold no-underline transition-all ${
-                  isActive
-                    ? 'bg-orange-500 text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
-                }`
-              }
-            >
-              Menu
-            </NavLink>
-            <NavLink
-              to="/order-status"
-              className={({ isActive }) =>
-                `px-3.5 py-2 rounded-xl text-sm font-bold no-underline transition-all ${
-                  isActive
-                    ? 'bg-orange-500 text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
-                }`
-              }
-            >
-              Track Order
-            </NavLink>
-            <NavLink
-              to="/ready_for_pickup"
-              className={({ isActive }) =>
-                `px-3.5 py-2 rounded-xl text-sm font-bold no-underline transition-all flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/60'
-                }`
-              }
-            >
-              <Tv size={15} />
-              <span>Pickup Board</span>
-            </NavLink>
-          </nav>
 
           {/* Right Header Actions: Account Icon & Cart */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">

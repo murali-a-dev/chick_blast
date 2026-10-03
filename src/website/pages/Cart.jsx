@@ -170,9 +170,6 @@ export default function Cart() {
 
     try {
       const order = await ordersApi.create({
-        orderType: 'takeaway',
-        tableNo: '',
-        deliveryAddress: '',
         customerName: currentName,
         customerMobile: currentMobile,
         customerDid,

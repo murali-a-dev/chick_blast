@@ -241,15 +241,6 @@ export default function ReadyForPickup() {
             >
               <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
             </button>
-
-            {/* Back to Website Button on Desktop */}
-            <Link
-              to="/"
-              className="hidden lg:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold border border-white/10 no-underline transition-colors"
-            >
-              <ArrowLeft size={15} />
-              <span>Back to Menu</span>
-            </Link>
           </div>
         </div>
       </header>

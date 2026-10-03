@@ -17,8 +17,6 @@ import {
   AlertCircle,
   ClipboardCheck,
   Search,
-  UtensilsCrossed,
-  MapPin,
   Tag,
 } from 'lucide-react'
 import { ordersApi } from '../../shared/api'
@@ -481,29 +479,17 @@ export default function OrderStatus() {
             </div>
           </div>
 
-          {/* Dining Type & Instructions Banner */}
+          {/* Collection Point Banner */}
           <div className="p-3 rounded-2xl bg-orange-50/70 border border-orange-100 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              {order.orderType === 'dine-in' ? (
-                <UtensilsCrossed size={16} className="text-orange-600" />
-              ) : order.orderType === 'delivery' ? (
-                <MapPin size={16} className="text-orange-600" />
-              ) : (
-                <ShoppingBag size={16} className="text-orange-600" />
-              )}
+              <ShoppingBag size={16} className="text-orange-600" />
               <span className="font-extrabold text-orange-950 uppercase tracking-wide">
-                {order.orderType === 'dine-in'
-                  ? `Dine-In • Table ${order.tableNo || 'N/A'}`
-                  : order.orderType === 'delivery'
-                  ? 'Delivery to Doorstep'
-                  : 'Counter Takeaway'}
+                Counter Collection Point
               </span>
             </div>
-            {order.orderType === 'delivery' && order.deliveryAddress && (
-              <span className="text-[11px] text-gray-600 font-medium truncate max-w-[200px]">
-                {order.deliveryAddress}
-              </span>
-            )}
+            <span className="text-[11px] text-orange-700 font-bold">
+              Counter 1
+            </span>
           </div>
 
           {/* Customer Details Cards Grid */}
