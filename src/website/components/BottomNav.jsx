@@ -21,27 +21,22 @@ export default function BottomNav() {
           to={to}
           end={to === '/'}
           className={({ isActive }) =>
-            `flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all duration-200 no-underline whitespace-nowrap ${
+            `flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 no-underline select-none ${
               isActive
-                ? 'text-white shadow-md scale-[1.02]'
-                : 'text-gray-500 hover:text-gray-900'
+                ? 'text-orange-600 bg-orange-50 font-black shadow-2xs'
+                : 'text-slate-500 hover:text-slate-900 font-semibold hover:bg-slate-50'
             }`
           }
-          style={({ isActive }) =>
-            isActive
-              ? { background: 'linear-gradient(135deg, var(--color-primary), #ea580c)' }
-              : {}
-          }
         >
-          <div className="relative flex items-center justify-center">
-            <Icon size={17} />
+          <div className="relative flex items-center justify-center mb-0.5">
+            <Icon size={19} className="stroke-[2.2]" />
             {to === '/cart' && itemCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center text-white bg-slate-950 border border-white">
+              <span className="absolute -top-1 -right-2.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-black flex items-center justify-center text-white bg-slate-950 border border-white">
                 {itemCount}
               </span>
             )}
           </div>
-          <span>{label}</span>
+          <span className="text-[11px] leading-tight tracking-tight truncate max-w-full">{label}</span>
         </NavLink>
       ))}
 
@@ -49,12 +44,16 @@ export default function BottomNav() {
       <button
         type="button"
         onClick={() => (isLoggedIn ? openAccountModal() : openAuthModal())}
-        className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold text-gray-500 hover:text-gray-900 border-none bg-transparent cursor-pointer whitespace-nowrap transition-colors"
+        className="flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 border-none bg-transparent cursor-pointer text-slate-500 hover:text-slate-900 font-semibold hover:bg-slate-50 select-none"
       >
-        <div className="w-5 h-5 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-black">
-          {isLoggedIn && customer?.Name ? customer.Name.charAt(0).toUpperCase() : <User size={13} />}
+        <div className="relative flex items-center justify-center mb-0.5">
+          <div className="w-5 h-5 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-black">
+            {isLoggedIn && customer?.Name ? customer.Name.charAt(0).toUpperCase() : <User size={13} className="stroke-[2.2]" />}
+          </div>
         </div>
-        <span>{isLoggedIn ? 'Account' : 'Login'}</span>
+        <span className="text-[11px] leading-tight tracking-tight truncate max-w-full">
+          {isLoggedIn ? (customer?.Name ? customer.Name.split(' ')[0] : 'Profile') : 'Login'}
+        </span>
       </button>
     </nav>
   )

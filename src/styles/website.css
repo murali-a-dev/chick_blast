@@ -7,14 +7,16 @@
 }
 
 .website-header {
-  @apply sticky top-0 z-40 px-4 py-4;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  @apply sticky top-0 z-40 w-full;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .website-header h1 {
-  @apply text-2xl font-bold m-0;
+  @apply text-xl sm:text-2xl font-black m-0 leading-tight tracking-tight;
   background: linear-gradient(135deg, var(--color-primary), var(--color-secondary-dark));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

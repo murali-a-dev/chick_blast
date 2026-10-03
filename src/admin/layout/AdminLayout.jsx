@@ -87,12 +87,24 @@ export default function AdminLayout() {
       </aside>
 
       <div className="admin-main">
-        <button
-          className="md:hidden mb-4 p-2 rounded-lg bg-white shadow-sm cursor-pointer border-none"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* Mobile Header Bar */}
+        <div className="md:hidden flex items-center justify-between bg-white px-4 py-3 rounded-2xl shadow-xs border border-slate-200/80 mb-5">
+          <div className="flex items-center gap-2.5">
+            <img src={logoImg} alt="Chick Blast Logo" className="h-8 w-auto object-contain" />
+            <div>
+              <span className="text-sm font-black text-slate-900 block leading-tight">Chick Blast</span>
+              <span className="text-[10px] text-orange-500 font-bold uppercase tracking-wider">Admin Panel</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer border border-slate-200 transition-colors"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
         {isAuthenticated && <Outlet />}
       </div>
 

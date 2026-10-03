@@ -1,5 +1,5 @@
 import { Outlet, Link, NavLink } from 'react-router-dom'
-import { ShoppingCart, User, ShieldCheck } from 'lucide-react'
+import { ShoppingCart, User, ShieldCheck, Tv } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import CustomerAuthModal from '../components/CustomerAuthModal'
 import CustomerAccountModal from '../components/CustomerAccountModal'
@@ -17,66 +17,74 @@ export default function WebsiteLayout() {
     <div className="website-layout">
       {/* Top Header */}
       <header className="website-header">
-        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-3 sm:gap-6">
           {/* Logo & Brand Name */}
-          <Link to="/" className="flex items-center gap-2.5 no-underline group">
+          <Link to="/" className="flex items-center gap-2.5 sm:gap-3 no-underline group shrink-0">
             <img
               src={logoImg}
               alt="Chick Blast Logo"
-              className="h-10 sm:h-11 w-auto object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-200"
+              className="h-10 sm:h-11 w-auto object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-200"
             />
-            <div>
-              <h1 className="text-lg sm:text-xl font-black tracking-tight text-gray-900 m-0 leading-tight">
+            <div className="flex flex-col justify-center">
+              <span className="text-lg sm:text-xl font-black tracking-tight text-gray-900 leading-none">
                 Chick Blast
-              </h1>
-              <p className="text-[10px] text-orange-500 font-bold uppercase tracking-wider m-0 hidden sm:block">
-                Crispy & Delicious
-              </p>
+              </span>
+              <span className="text-[10px] text-orange-500 font-bold uppercase tracking-wider mt-1 hidden sm:block">
+                Crispy &amp; Delicious
+              </span>
             </div>
           </Link>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-1.5 lg:gap-2">
             <NavLink
               to="/"
               end
               className={({ isActive }) =>
-                `text-sm font-semibold no-underline transition-colors ${
-                  isActive ? 'text-orange-500 font-bold' : 'text-gray-600 hover:text-gray-900'
+                `px-3.5 py-2 rounded-xl text-sm font-bold no-underline transition-all ${
+                  isActive
+                    ? 'bg-orange-500 text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
                 }`
               }
             >
               Menu
             </NavLink>
             <NavLink
-              to="/cart"
-              className={({ isActive }) =>
-                `text-sm font-semibold no-underline transition-colors ${
-                  isActive ? 'text-orange-500 font-bold' : 'text-gray-600 hover:text-gray-900'
-                }`
-              }
-            >
-              Cart ({itemCount})
-            </NavLink>
-            <NavLink
               to="/order-status"
               className={({ isActive }) =>
-                `text-sm font-semibold no-underline transition-colors ${
-                  isActive ? 'text-orange-500 font-bold' : 'text-gray-600 hover:text-gray-900'
+                `px-3.5 py-2 rounded-xl text-sm font-bold no-underline transition-all ${
+                  isActive
+                    ? 'bg-orange-500 text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
                 }`
               }
             >
               Track Order
             </NavLink>
+            <NavLink
+              to="/ready_for_pickup"
+              className={({ isActive }) =>
+                `px-3.5 py-2 rounded-xl text-sm font-bold no-underline transition-all flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/60'
+                }`
+              }
+            >
+              <Tv size={15} />
+              <span>Pickup Board</span>
+            </NavLink>
           </nav>
 
           {/* Right Header Actions: Account Icon & Cart */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Account Icon Button for Customer */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Account Button for Customer */}
             {isLoggedIn && customer ? (
               <button
+                type="button"
                 onClick={openAccountModal}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-gray-900 font-bold text-xs sm:text-sm border border-slate-200 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                className="h-10 flex items-center gap-2 px-3 sm:px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-gray-900 font-bold text-xs sm:text-sm border border-slate-200/80 transition-all active:scale-95 cursor-pointer shadow-2xs"
                 title="View Customer Profile & Order History"
               >
                 <div className="w-6 h-6 rounded-lg bg-orange-500 text-white flex items-center justify-center font-black text-xs">
@@ -89,8 +97,9 @@ export default function WebsiteLayout() {
               </button>
             ) : (
               <button
+                type="button"
                 onClick={() => openAuthModal()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold text-xs sm:text-sm border border-orange-200/80 transition-all active:scale-95 cursor-pointer"
+                className="h-10 flex items-center gap-1.5 px-3 sm:px-3.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold text-xs sm:text-sm border border-orange-200/80 transition-all active:scale-95 cursor-pointer"
                 title="Customer Login / Signup"
               >
                 <User size={16} />
@@ -101,9 +110,9 @@ export default function WebsiteLayout() {
             {/* Cart Button */}
             <Link
               to="/cart"
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs sm:text-sm no-underline shadow-md shadow-orange-500/20 transition-transform active:scale-95"
+              className="h-10 flex items-center gap-2 px-3.5 sm:px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs sm:text-sm no-underline shadow-md shadow-orange-500/20 transition-all active:scale-95"
             >
-              <div className="relative">
+              <div className="relative flex items-center">
                 <ShoppingCart size={18} />
                 {itemCount > 0 && (
                   <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-slate-950 text-orange-400 text-[10px] font-black flex items-center justify-center border border-white">
@@ -111,7 +120,7 @@ export default function WebsiteLayout() {
                   </span>
                 )}
               </div>
-              <span className="hidden sm:inline">₹{totalAmount.toFixed(2)}</span>
+              <span className="hidden sm:inline font-extrabold">₹{totalAmount.toFixed(2)}</span>
             </Link>
           </div>
         </div>
