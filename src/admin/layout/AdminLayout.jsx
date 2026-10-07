@@ -38,6 +38,7 @@ export default function AdminLayout() {
   const handleLogout = () => {
     sessionStorage.removeItem('cb_admin_token')
     setIsAuthenticated(false)
+    setSidebarOpen(false)
   }
 
   return (
@@ -96,14 +97,26 @@ export default function AdminLayout() {
               <span className="text-[10px] text-orange-500 font-bold uppercase tracking-wider">Admin Panel</span>
             </div>
           </div>
-          <button
-            type="button"
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer border border-slate-200 transition-colors"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Toggle navigation menu"
-          >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer border border-rose-200 transition-colors"
+                title="Logout Admin"
+              >
+                <LogOut size={18} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer border border-slate-200 transition-colors"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle navigation menu"
+            >
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
         {isAuthenticated && <Outlet />}
       </div>

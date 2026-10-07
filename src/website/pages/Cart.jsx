@@ -454,7 +454,7 @@ export default function Cart() {
           <div className="flex items-center gap-2">
             <Tag size={16} className="text-orange-500" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600 m-0">
-              Apply Coupon / Discount
+              Apply Coupon
             </h3>
           </div>
           {discountCode && (

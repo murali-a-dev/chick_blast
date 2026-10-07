@@ -11,6 +11,12 @@ export default function ModernDatePicker({ value, onChange, label, placeholder =
   const [viewMonth, setViewMonth] = useState(currentDate.clone())
 
   useEffect(() => {
+    if (value) {
+      setViewMonth(moment(value))
+    }
+  }, [value])
+
+  useEffect(() => {
     function handleClickOutside(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setIsOpen(false)

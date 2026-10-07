@@ -150,6 +150,11 @@ export function CustomerProvider({ children }) {
     setIsAccountModalOpen(false)
     try {
       localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem('cb_last_order_id')
+      localStorage.removeItem('cb_cart_items')
+      localStorage.removeItem('cb_discount_code')
+      localStorage.removeItem('cb_applied_coupon')
+      window.dispatchEvent(new CustomEvent('cb_customer_logout'))
     } catch (e) {
       console.error(e)
     }

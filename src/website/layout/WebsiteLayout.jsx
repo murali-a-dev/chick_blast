@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom'
-import { ShoppingCart, User, ShieldCheck } from 'lucide-react'
+import { ShoppingCart, User, ShieldCheck, LogOut } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import CustomerAuthModal from '../components/CustomerAuthModal'
 import CustomerAccountModal from '../components/CustomerAccountModal'
@@ -11,7 +11,7 @@ import '../../styles/website.css'
 
 export default function WebsiteLayout() {
   const { itemCount, totalAmount } = useCart()
-  const { customer, isLoggedIn, openAuthModal, openAccountModal } = useCustomer()
+  const { customer, isLoggedIn, openAuthModal, openAccountModal, logoutCustomer } = useCustomer()
 
   return (
     <div className="website-layout">
@@ -39,20 +39,32 @@ export default function WebsiteLayout() {
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Account Button for Customer */}
             {isLoggedIn && customer ? (
-              <button
-                type="button"
-                onClick={openAccountModal}
-                className="h-10 flex items-center gap-2 px-3 sm:px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-gray-900 font-bold text-xs sm:text-sm border border-slate-200/80 transition-all active:scale-95 cursor-pointer shadow-2xs"
-                title="View Customer Profile & Order History"
-              >
-                <div className="w-6 h-6 rounded-lg bg-orange-500 text-white flex items-center justify-center font-black text-xs">
-                  {customer.Name ? customer.Name.charAt(0).toUpperCase() : <User size={14} />}
-                </div>
-                <span className="max-w-[100px] truncate hidden sm:inline">
-                  {customer.Name || 'Account'}
-                </span>
-                <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
-              </button>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={openAccountModal}
+                  className="h-10 flex items-center gap-2 px-3 sm:px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-gray-900 font-bold text-xs sm:text-sm border border-slate-200/80 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                  title="View Customer Profile & Order History"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-orange-500 text-white flex items-center justify-center font-black text-xs">
+                    {customer.Name ? customer.Name.charAt(0).toUpperCase() : <User size={14} />}
+                  </div>
+                  <span className="max-w-[100px] truncate hidden sm:inline">
+                    {customer.Name || 'Account'}
+                  </span>
+                  <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={logoutCustomer}
+                  className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/80 transition-all active:scale-95 cursor-pointer shadow-2xs shrink-0"
+                  title="Sign Out / Logout"
+                  aria-label="Logout"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
             ) : (
               <button
                 type="button"

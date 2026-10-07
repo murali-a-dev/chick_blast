@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -15,7 +16,7 @@ import moment from 'moment'
 import { dashboardApi } from '../../shared/api'
 import ModernDatePicker from '../../shared/components/ModernDatePicker'
 import ModernSelect from '../../shared/components/ModernSelect'
-import { TrendingUp, ShoppingBag, PieChart as PieIcon, Award, Calendar, Filter, IndianRupee } from 'lucide-react'
+import { TrendingUp, ShoppingBag, PieChart as PieIcon, Award, Calendar, Filter, IndianRupee, ArrowRight } from 'lucide-react'
 import logoImg from '../../assets/logo.png'
 import { DATE_RANGES } from '../../shared/constants/index'
 
@@ -36,9 +37,20 @@ export default function Dashboard() {
   const [growthYear, setGrowthYear] = useState(currentYear)
   const [growthData, setGrowthData] = useState([])
 
+  // Effect to fetch stats based on date filter range
   useEffect(() => {
-    dashboardApi.stats().then(setStats).catch(console.error)
-  }, [])
+    dashboardApi
+      .stats({ fromDate, toDate })
+      .then((data) => {
+        if (data) {
+          setStats({
+            ...data,
+            activeOrders: data.activeOrders ?? data.activeOrdersCount ?? 0,
+          })
+        }
+      })
+      .catch(console.error)
+  }, [fromDate, toDate])
 
   // Calculate dates based on selected preset
   const handlePresetSelect = (presetKey) => {
@@ -177,18 +189,27 @@ export default function Dashboard() {
           <p className="text-[11px] text-slate-500 mt-2 m-0">Per delivered order</p>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+        <Link
+          to="/admin/live-orders"
+          className="bg-white border border-slate-200/80 hover:border-emerald-400 hover:shadow-md transition-all duration-200 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between group no-underline text-inherit cursor-pointer"
+          title="Click to view Live Kitchen Orders"
+        >
           <div>
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Active In Kitchen</span>
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0" title="Active Kitchen Queue" />
+            <div className="flex items-center justify-between text-slate-400 group-hover:text-emerald-600 transition-colors">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">Active In Kitchen</span>
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0 animate-pulse" title="Active Kitchen Queue" />
             </div>
             <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 m-0">
-              {stats.activeOrders}
+              {stats.activeOrders ?? stats.activeOrdersCount ?? 0}
             </h3>
           </div>
-          <p className="text-[11px] text-emerald-600 font-bold mt-2 m-0">Live kitchen queue</p>
-        </div>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-[11px] text-emerald-600 font-bold m-0">Live kitchen queue</p>
+            <span className="text-[10px] font-bold text-slate-400 group-hover:text-emerald-600 flex items-center gap-0.5 transition-colors">
+              View <ArrowRight size={12} />
+            </span>
+          </div>
+        </Link>
       </div>
 
       {/* Date Range Filter Bar */}
@@ -390,7 +411,7 @@ export default function Dashboard() {
                 <TrendingUp size={18} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-gray-900 m-0">Monthly Sales Trend</h3>
+                <h3 className="text-base font-bold text-gray-900 m-0">Monthly Sales</h3>
                 <span className="text-xs text-gray-400">Daily order volume</span>
               </div>
             </div>
@@ -413,12 +434,12 @@ export default function Dashboard() {
           </div>
 
           <div className="w-full min-w-0">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={growthData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={growthData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ff6b35" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#ffc857" stopOpacity={0.8} />
+                  <linearGradient id="growthAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ff6b35" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#ff6b35" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -436,17 +457,26 @@ export default function Dashboard() {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload
                       return (
-                        <div className="bg-slate-900/90 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-xl border border-white/20">
-                          <p className="m-0 text-orange-400">{data.date}</p>
-                          <p className="m-0 text-white font-bold">{data.count} Orders</p>
+                        <div className="bg-slate-900/95 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-xl border border-white/20 backdrop-blur-md">
+                          <p className="m-0 text-orange-400">{moment(data.date).format('DD MMM YYYY')}</p>
+                          <p className="m-0 text-white font-bold text-sm mt-0.5">{data.count} Orders Placed</p>
                         </div>
                       )
                     }
                     return null
                   }}
                 />
-                <Bar dataKey="count" fill="url(#barGradient)" radius={[4, 4, 0, 0]} barSize={14} />
-              </BarChart>
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#ff6b35"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#growthAreaGradient)"
+                  dot={{ r: 3, fill: '#ff6b35', stroke: '#ffffff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: '#ff6b35', stroke: '#ffffff', strokeWidth: 2 }}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div >

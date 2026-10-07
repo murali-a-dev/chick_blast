@@ -3,6 +3,7 @@ import { User, Phone, Calendar, Clock, ShoppingBag, CheckCircle2 } from 'lucide-
 import OrderBadge from './OrderBadge'
 import StatusPill from './StatusPill'
 import FssaiBadge from './FssaiBadge'
+import PrintBillButton from './PrintBillButton'
 import logoImg from '../../assets/logo.png'
 
 export default function OrderDetailsContent({ order }) {
@@ -26,6 +27,9 @@ export default function OrderDetailsContent({ order }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {order.status === 'delivered' && (
+            <PrintBillButton order={order} variant="compact" label="Print Bill" />
+          )}
           <OrderBadge orderNo={order.orderNo} />
           <StatusPill status={order.status} />
         </div>
@@ -177,6 +181,18 @@ export default function OrderDetailsContent({ order }) {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Prominent Delivered Bill Print Action */}
+      {order.status === 'delivered' && (
+        <div className="pt-2">
+          <PrintBillButton
+            order={order}
+            variant="primary"
+            label="Print PDF Bill"
+            className="w-full !py-3 !text-sm"
+          />
         </div>
       )}
     </div>

@@ -137,11 +137,11 @@ export default function ReadyForPickup() {
   // Fullscreen toggle
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {})
+      document.documentElement.requestFullscreen().catch(() => { })
       setIsFullscreen(true)
     } else {
       if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {})
+        document.exitFullscreen().catch(() => { })
         setIsFullscreen(false)
       }
     }
@@ -172,22 +172,12 @@ export default function ReadyForPickup() {
                   <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight m-0">
                     CHICK BLAST
                   </h1>
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" title="Live Board Active" />
                 </div>
                 <p className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-emerald-400 m-0 mt-0.5 flex items-center gap-1.5">
-                  <Sparkles size={14} /> Ready For Pickup Board
+                  <Sparkles size={14} /> Pickup Board
                 </p>
               </div>
             </div>
-
-            {/* Back to Website Button on Mobile */}
-            <Link
-              to="/"
-              className="lg:hidden flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold border border-white/10 no-underline transition-colors"
-            >
-              <ArrowLeft size={14} />
-              <span>Menu</span>
-            </Link>
           </div>
 
           {/* Right: Clock & TV Controls */}
@@ -204,21 +194,6 @@ export default function ReadyForPickup() {
               <PackageCheck size={17} className="shrink-0" />
               <span>{orders.length} READY</span>
             </div>
-
-            {/* Audio Toggle */}
-            <button
-              type="button"
-              onClick={() => setSoundEnabled((v) => !v)}
-              title={soundEnabled ? 'Chime Alert Enabled (Click to Mute)' : 'Chime Alert Muted (Click to Unmute)'}
-              className={`p-2 sm:p-2.5 rounded-xl border transition-all cursor-pointer ${
-                soundEnabled
-                  ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 shadow-md shadow-orange-500/20'
-                  : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-              }`}
-              aria-label="Toggle chime sound"
-            >
-              {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-            </button>
 
             {/* Fullscreen Button */}
             <button

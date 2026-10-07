@@ -8,6 +8,7 @@ import GradientModal from '../../shared/components/GradientModal'
 import OrderDetailsContent from '../../shared/components/OrderDetailsContent'
 import ModernDatePicker from '../../shared/components/ModernDatePicker'
 import ModernSelect from '../../shared/components/ModernSelect'
+import PrintBillButton from '../../shared/components/PrintBillButton'
 import Loader from '../../shared/components/Loader'
 
 const STATUS_FILTER_OPTIONS = [
@@ -217,10 +218,15 @@ export default function OrderSummary() {
                       <Phone size={13} className="text-slate-400" />
                       <span>{order.customerMobile}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <span className="font-extrabold text-sm text-slate-900">
                         ₹{(order.totalAmount || 0).toFixed(2)}
                       </span>
+                      {order.status === 'delivered' && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <PrintBillButton order={order} variant="compact" label="Bill" />
+                        </div>
+                      )}
                       <ChevronRight size={16} className="text-slate-400" />
                     </div>
                   </div>
@@ -238,6 +244,7 @@ export default function OrderSummary() {
                     <th>Customer Details</th>
                     <th>Amount</th>
                     <th>Status</th>
+                    <th className="text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -253,6 +260,13 @@ export default function OrderSummary() {
                         ₹{(order.totalAmount || 0).toFixed(2)}
                       </td>
                       <td><StatusPill status={order.status} /></td>
+                      <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                        {order.status === 'delivered' ? (
+                          <PrintBillButton order={order} variant="compact" label="Print Bill" />
+                        ) : (
+                          <span className="text-slate-300 text-xs font-semibold">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

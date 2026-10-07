@@ -7,6 +7,7 @@ import {
   Trash2,
   Search,
   CheckCircle2,
+  Check,
   Copy,
   Percent,
   Coins,
@@ -26,9 +27,11 @@ import { couponsApi } from '../../shared/api'
 import GradientModal from '../../shared/components/GradientModal'
 import ConfirmModal from '../../shared/components/ConfirmModal'
 import ModernSelect from '../../shared/components/ModernSelect'
+import ModernDatePicker from '../../shared/components/ModernDatePicker'
 import Toast from '../../shared/components/Toast'
 import { useToast } from '../../shared/hooks/useToast'
 import Loader from '../../shared/components/Loader'
+import { copyToClipboard } from '../../shared/utils/clipboard'
 
 const emptyForm = {
   code: '',
@@ -320,11 +323,10 @@ function CouponFormModal({ isOpen, onClose, coupon, onSave }) {
               </button>
             </div>
           </div>
-          <input
-            type="date"
+          <ModernDatePicker
             value={form.validTill}
-            onChange={(e) => setForm((f) => ({ ...f, validTill: e.target.value }))}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-semibold outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all text-sm"
+            onChange={(d) => setForm((f) => ({ ...f, validTill: d }))}
+            placeholder="Select expiry date (or leave empty for no expiry)"
           />
         </div>
 
@@ -410,10 +412,23 @@ export default function Coupons() {
     }
   }, [showToast])
 
-  const handleCopyCode = (code) => {
-    navigator.clipboard.writeText(code)
-    setCopiedCode(code)
-    setTimeout(() => setCopiedCode(null), 2000)
+  const handleCopyCode = async (code) => {
+    if (!code) return
+    const success = await copyToClipboard(code)
+    if (success) {
+      setCopiedCode(code)
+      showToast(`Copied code "${code}" to clipboard!`, 'success')
+      setTimeout(() => setCopiedCode(null), 2500)
+    } else {
+      // In-app webview / browser fallback: prompt to ensure mobile users can always copy
+      try {
+        window.prompt('Copy coupon code:', code)
+        setCopiedCode(code)
+        setTimeout(() => setCopiedCode(null), 2500)
+      } catch {
+        showToast(`Coupon code is: ${code}`, 'info')
+      }
+    }
   }
 
   const handleToggleStatus = async (coupon) => {
@@ -487,7 +502,7 @@ export default function Coupons() {
 
   return (
     <div className="space-y-6">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+      {toast && <Toast toast={toast} onClose={hideToast} />}
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
@@ -700,19 +715,25 @@ export default function Coupons() {
                     {/* Header: Code Pill & Status Badge */}
                     <div className="flex items-center justify-between gap-2 pb-3.5 border-b border-slate-100">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm sm:text-base font-black text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-xl border border-slate-200 tracking-wider flex items-center gap-1.5 transition-colors">
-                          {coupon.code}
-                          <button
-                            type="button"
-                            onClick={() => handleCopyCode(coupon.code)}
-                            title="Copy Code to Clipboard"
-                            className="text-slate-400 hover:text-slate-800 transition-colors border-none bg-transparent cursor-pointer p-0"
-                          >
-                            <Copy size={13} />
-                          </button>
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(coupon.code)}
+                          title="Click to copy coupon code"
+                          className={`font-mono text-sm sm:text-base font-black px-3 py-1.5 rounded-xl border tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                            copiedCode === coupon.code
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-400/20'
+                              : 'bg-slate-100 text-slate-900 border-slate-200 hover:bg-slate-200'
+                          }`}
+                        >
+                          <span>{coupon.code}</span>
+                          {copiedCode === coupon.code ? (
+                            <Check size={14} className="text-emerald-600 shrink-0" />
+                          ) : (
+                            <Copy size={14} className="text-slate-400 group-hover:text-slate-700 shrink-0" />
+                          )}
+                        </button>
                         {copiedCode === coupon.code && (
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 animate-in fade-in">
                             Copied!
                           </span>
                         )}
@@ -870,17 +891,23 @@ export default function Coupons() {
                   return (
                     <tr key={coupon.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3.5 px-4">
-                        <span className="font-mono font-black text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 inline-flex items-center gap-1.5">
-                          {coupon.code}
-                          <button
-                            type="button"
-                            onClick={() => handleCopyCode(coupon.code)}
-                            title="Copy code"
-                            className="text-slate-400 hover:text-slate-700 border-none bg-transparent cursor-pointer p-0"
-                          >
-                            <Copy size={12} />
-                          </button>
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(coupon.code)}
+                          title="Click to copy coupon code"
+                          className={`font-mono font-black px-2.5 py-1.5 rounded-lg border inline-flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs active:scale-95 ${
+                            copiedCode === coupon.code
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-slate-100 text-slate-900 border-slate-200 hover:bg-slate-200'
+                          }`}
+                        >
+                          <span>{coupon.code}</span>
+                          {copiedCode === coupon.code ? (
+                            <Check size={13} className="text-emerald-600" />
+                          ) : (
+                            <Copy size={13} className="text-slate-400" />
+                          )}
+                        </button>
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-slate-900">{coupon.title}</div>

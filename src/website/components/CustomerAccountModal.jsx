@@ -15,11 +15,14 @@ import {
   Calendar,
   AlertCircle,
   RefreshCw,
+  ArrowLeft,
 } from 'lucide-react'
 import { useCustomer } from '../../shared/context/CustomerContext'
 import { useCart } from '../../shared/context/CartContext'
 import StatusPill from '../../shared/components/StatusPill'
 import FssaiBadge from '../../shared/components/FssaiBadge'
+import OrderDetailsContent from '../../shared/components/OrderDetailsContent'
+import PrintBillButton from '../../shared/components/PrintBillButton'
 
 export default function CustomerAccountModal() {
   const navigate = useNavigate()
@@ -43,6 +46,7 @@ export default function CustomerAccountModal() {
   const [saving, setSaving] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null)
 
   const prevCustomerNameRef = useRef(customer?.Name || customer?.name)
   const currentName = customer?.Name || customer?.name || ''
@@ -206,7 +210,10 @@ export default function CustomerAccountModal() {
           {/* Tab Navigation Pill Bar */}
           <div className="flex items-center gap-2 mt-5 pt-3 border-t border-white/10">
             <button
-              onClick={() => setActiveTab('orders')}
+              onClick={() => {
+                setActiveTab('orders')
+                setSelectedOrderDetails(null)
+              }}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
                 activeTab === 'orders'
                   ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
@@ -218,7 +225,10 @@ export default function CustomerAccountModal() {
             </button>
 
             <button
-              onClick={() => setActiveTab('profile')}
+              onClick={() => {
+                setActiveTab('profile')
+                setSelectedOrderDetails(null)
+              }}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
                 activeTab === 'profile'
                   ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
@@ -235,8 +245,33 @@ export default function CustomerAccountModal() {
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-50/50 space-y-4 overscroll-contain">
           {/* TAB 1: PREVIOUS ORDER HISTORY */}
           {activeTab === 'orders' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+            selectedOrderDetails ? (
+              <div className="space-y-4 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-200 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOrderDetails(null)}
+                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-gray-100 text-gray-800 font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-gray-200 shadow-2xs"
+                  >
+                    <ArrowLeft size={14} />
+                    <span>Back to Order History</span>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-500">
+                      #{selectedOrderDetails.orderNo || (selectedOrderDetails.id ? String(selectedOrderDetails.id).split('-').pop() : '1')}
+                    </span>
+                    <StatusPill status={selectedOrderDetails.status} />
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
+                  <OrderDetailsContent order={selectedOrderDetails} />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-black text-gray-900 m-0">Previous Orders</h3>
                   <p className="text-xs text-gray-500 m-0">View your delicious past orders and receipts</p>
@@ -298,7 +333,8 @@ export default function CustomerAccountModal() {
                     return (
                       <div
                         key={orderId || `ord-${idx}`}
-                        className="bg-white border border-gray-100 rounded-2xl p-4 shadow-xs hover:shadow-md transition-shadow space-y-3"
+                        onClick={() => setSelectedOrderDetails(ord)}
+                        className="bg-white border border-gray-100 rounded-2xl p-4 shadow-xs hover:shadow-md transition-shadow space-y-3 cursor-pointer"
                       >
                         {/* Order Card Top Bar */}
                         <div className="flex items-center justify-between pb-2.5 border-b border-gray-100 gap-2">
@@ -335,8 +371,8 @@ export default function CustomerAccountModal() {
                           ))}
                         </div>
 
-                        {/* Order Card Footer - Hide Track Order if delivered or cancelled */}
-                        <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
+                        {/* Order Card Footer */}
+                        <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
                           <div>
                             <span className="text-[10px] uppercase font-bold text-gray-400 block">
                               Total Amount ({itemCount} {itemCount === 1 ? 'item' : 'items'})
@@ -346,15 +382,30 @@ export default function CustomerAccountModal() {
                             </span>
                           </div>
 
-                          {ord.status !== 'delivered' && ord.status !== 'cancelled' && (
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
-                              onClick={() => handleTrackOrder(orderId)}
-                              className="px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-600 font-extrabold text-xs border border-orange-200/80 flex items-center gap-1.5 transition-colors cursor-pointer"
+                              type="button"
+                              onClick={() => setSelectedOrderDetails(ord)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs border border-slate-200/80 flex items-center gap-1 transition-colors cursor-pointer"
+                              title="View complete order receipt"
                             >
-                              <span>Track Order</span>
-                              <ExternalLink size={13} />
+                              <span>Details</span>
                             </button>
-                          )}
+
+                            {ord.status === 'delivered' && (
+                              <PrintBillButton order={ord} variant="compact" label="Print Bill" />
+                            )}
+
+                            {ord.status !== 'delivered' && ord.status !== 'cancelled' && (
+                              <button
+                                onClick={() => handleTrackOrder(orderId)}
+                                className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-600 font-extrabold text-xs border border-orange-200/80 flex items-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <span>Track</span>
+                                <ExternalLink size={12} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )
@@ -362,7 +413,8 @@ export default function CustomerAccountModal() {
                 </div>
               )}
             </div>
-          )}
+          )
+        )}
 
           {/* TAB 2: PROFILE & EDIT DETAILS */}
           {activeTab === 'profile' && (
@@ -474,6 +526,18 @@ export default function CustomerAccountModal() {
                 <p className="text-[11px] text-gray-400 m-0">
                   Mobile number is locked as your primary login identifier.
                 </p>
+              </div>
+
+              {/* Explicit Sign Out / Logout Option */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full py-3 px-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs flex items-center justify-center gap-2 border border-red-200 transition-colors cursor-pointer"
+                >
+                  <LogOut size={16} />
+                  <span>Log Out of Account</span>
+                </button>
               </div>
             </div>
           )}

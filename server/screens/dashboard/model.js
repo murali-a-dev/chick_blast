@@ -1,5 +1,5 @@
 import { getDb } from '../../config/firebase.js'
-import { ORDER_STATUSES, ACTIVE_STATUSES, getTodayDate } from '../orders/model.js'
+import { ORDER_STATUSES, ACTIVE_STATUSES, getTodayDate, fetchActiveOrders } from '../orders/model.js'
 
 const dashboardCache = new Map()
 const DASHBOARD_CACHE_TTL = 30 * 1000 // 30 seconds
@@ -130,14 +130,19 @@ export async function fetchDashboardStats(opts = {}) {
   if (cached) return cached
 
   if (!db) {
-    return {
+    const activeList = await fetchActiveOrders().catch(() => [])
+    const activeCount = Array.isArray(activeList) ? activeList.length : 0
+    const result = {
       totalRevenue: 0,
       totalOrders: 0,
       averageOrderValue: 0,
-      activeOrdersCount: 0,
+      activeOrders: activeCount,
+      activeOrdersCount: activeCount,
       deliveredOrdersCount: 0,
       cancelledOrdersCount: 0,
     }
+    setCache(cacheKey, result)
+    return result
   }
 
   // 1. Fetch orders in the selected date range
@@ -178,6 +183,7 @@ export async function fetchDashboardStats(opts = {}) {
     totalRevenue: Math.round(totalRevenue * 100) / 100,
     totalOrders,
     averageOrderValue,
+    activeOrders: activeOrdersCount,
     activeOrdersCount,
     deliveredOrdersCount,
     cancelledOrdersCount,

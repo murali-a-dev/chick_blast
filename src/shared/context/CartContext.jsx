@@ -49,6 +49,28 @@ export function CartProvider({ children }) {
     setStored('cb_last_order_id', lastOrderId)
   }, [lastOrderId])
 
+  // Listen to logout event to clear customer session from cart context
+  useEffect(() => {
+    const handleLogout = () => {
+      setLastOrderId(null)
+      setCustomerName('')
+      setCustomerMobile('')
+      setItems([])
+      setDiscountCode('')
+      setAppliedCoupon(null)
+      try {
+        localStorage.removeItem('cb_last_order_id')
+        localStorage.removeItem('cb_cart_items')
+        localStorage.removeItem('cb_discount_code')
+        localStorage.removeItem('cb_applied_coupon')
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    window.addEventListener('cb_customer_logout', handleLogout)
+    return () => window.removeEventListener('cb_customer_logout', handleLogout)
+  }, [])
+
   const addItem = useCallback((product) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.itemId === product.id)
